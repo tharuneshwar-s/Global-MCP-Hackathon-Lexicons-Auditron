@@ -7,15 +7,22 @@ from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.security import SecurityCenter
 from azure.core.exceptions import ClientAuthenticationError
 import os
+from typing import Optional
 
 # --- Helper function to get credentials ---
-def get_azure_credentials():
+def get_azure_credentials(azure_credentials: Optional['AzureCredentials'] = None):
     """Helper to centralize credential loading."""
     try:
-        tenant_id = os.getenv("AZURE_TENANT_ID")
-        client_id = os.getenv("AZURE_CLIENT_ID")
-        client_secret = os.getenv("AZURE_CLIENT_SECRET")
-        subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
+        if azure_credentials:
+            tenant_id = azure_credentials.tenant_id
+            client_id = azure_credentials.client_id
+            client_secret = azure_credentials.client_secret
+            subscription_id = azure_credentials.subscription_id
+        else:
+            tenant_id = os.getenv("AZURE_TENANT_ID")
+            client_id = os.getenv("AZURE_CLIENT_ID")
+            client_secret = os.getenv("AZURE_CLIENT_SECRET")
+            subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
 
         if not all([tenant_id, client_id, client_secret, subscription_id]):
             return None, None
@@ -27,8 +34,8 @@ def get_azure_credentials():
 
 # --- Category 1 Functions ---
 
-def check_azure_storage_public():
-    credential, subscription_id = get_azure_credentials()
+def check_azure_storage_public(azure_credentials: Optional['AzureCredentials'] = None):
+    credential, subscription_id = get_azure_credentials(azure_credentials)
     if not credential: return {"status": "ERROR", "summary": "Azure credentials not configured."}
     try:
         storage_client = StorageManagementClient(credential, subscription_id)
@@ -47,8 +54,8 @@ def check_azure_storage_public():
         else: return {"status": "FAILURE", "summary": f"Found {len(non_compliant_accounts)} accounts with public containers.", "evidence": {"compliant": len(compliant_accounts), "non_compliant": non_compliant_accounts}}
     except Exception as e: return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_azure_storage_https():
-    credential, subscription_id = get_azure_credentials()
+def check_azure_storage_https(azure_credentials: Optional['AzureCredentials'] = None):
+    credential, subscription_id = get_azure_credentials(azure_credentials)
     if not credential: return {"status": "ERROR", "summary": "Azure credentials not configured."}
     try:
         storage_client = StorageManagementClient(credential, subscription_id)
@@ -62,8 +69,8 @@ def check_azure_storage_https():
         else: return {"status": "FAILURE", "summary": f"Found {len(non_compliant_accounts)} accounts not enforcing HTTPS.", "evidence": {"compliant": len(compliant_accounts), "non_compliant": non_compliant_accounts}}
     except Exception as e: return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_azure_sql_tde():
-    credential, subscription_id = get_azure_credentials()
+def check_azure_sql_tde(azure_credentials: Optional['AzureCredentials'] = None):
+    credential, subscription_id = get_azure_credentials(azure_credentials)
     if not credential: return {"status": "ERROR", "summary": "Azure credentials not configured."}
     try:
         sql_client = SqlManagementClient(credential, subscription_id)
@@ -87,16 +94,16 @@ def check_azure_sql_tde():
 
 # --- Category 2 Functions ---
 
-def check_azure_entra_mfa_admin():
+def check_azure_entra_mfa_admin(azure_credentials: Optional['AzureCredentials'] = None):
     """Placeholder check for Entra ID Admin MFA."""
-    credential, subscription_id = get_azure_credentials()
+    credential, subscription_id = get_azure_credentials(azure_credentials)
     if not credential: return {"status": "ERROR", "summary": "Azure credentials not configured."}
     try:
         return {"status": "SUCCESS", "summary": "Placeholder: A full MFA check requires the MS Graph SDK.", "evidence": [{"note": "In a production tool, query the Graph API for Conditional Access policies targeting admin roles and requiring MFA."}]}
     except Exception as e: return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_azure_nsg_restricted_rdp():
-    credential, subscription_id = get_azure_credentials()
+def check_azure_nsg_restricted_rdp(azure_credentials: Optional['AzureCredentials'] = None):
+    credential, subscription_id = get_azure_credentials(azure_credentials)
     if not credential: return {"status": "ERROR", "summary": "Azure credentials not configured."}
     try:
         network_client = NetworkManagementClient(credential, subscription_id)
@@ -115,9 +122,9 @@ def check_azure_nsg_restricted_rdp():
 
 # --- Category 3 Functions (DEFINITIVELY CORRECTED) ---
 
-def check_azure_monitor_log_profiles():
+def check_azure_monitor_log_profiles(azure_credentials: Optional['AzureCredentials'] = None):
     """Checks that a diagnostic setting is configured to export the Activity Log."""
-    credential, subscription_id = get_azure_credentials()
+    credential, subscription_id = get_azure_credentials(azure_credentials)
     if not credential:
         return {"status": "ERROR", "summary": "Azure credentials not configured."}
     try:
@@ -152,9 +159,9 @@ def check_azure_monitor_log_profiles():
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
 
-def check_azure_defender_standard_tier():
+def check_azure_defender_standard_tier(azure_credentials: Optional['AzureCredentials'] = None):
     """Checks if the standard tier of Microsoft Defender for Cloud is enabled."""
-    credential, subscription_id = get_azure_credentials()
+    credential, subscription_id = get_azure_credentials(azure_credentials)
     if not credential:
         return {"status": "ERROR", "summary": "Azure credentials not configured."}
     try:

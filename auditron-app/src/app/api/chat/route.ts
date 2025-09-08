@@ -1,37 +1,86 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 const MCP_URL = process.env.MCP_URL;
 
 if (!API_KEY) {
-  throw new Error('GOOGLE_API_KEY environment variable is not set. Please add it to your .env file.');
+  throw new Error(
+    "GOOGLE_API_KEY environment variable is not set. Please add it to your .env file."
+  );
 }
 
 if (!MCP_URL) {
-  throw new Error('MCP_URL environment variable is not set. Please add it to your .env file.');
+  throw new Error(
+    "MCP_URL environment variable is not set. Please add it to your .env file."
+  );
 }
 
 // Ensure public/reports directory exists
 const ensureReportsDir = () => {
-  const reportsDir = path.join(process.cwd(), 'public', 'reports');
+  const reportsDir = path.join(process.cwd(), "public", "reports");
   if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true });
   }
   return reportsDir;
 };
 
+// Check if user has credentials for cloud providers
+const checkUserCredentials = async () => {
+  try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { hasCredentials: false, error: "User not authenticated" };
+    }
+
+    const { data: credentials, error } = await supabase
+      .from("credentials")
+      .select("aws_credentials, azure_credentials, gcp_credentials")
+      .eq("user_id", user.id)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      // PGRST116 is "not found"
+      return { hasCredentials: false, error: "Failed to fetch credentials" };
+    }
+
+    const hasAnyCredentials = !!(
+      credentials?.aws_credentials ||
+      credentials?.azure_credentials ||
+      credentials?.gcp_credentials
+    );
+
+    return {
+      hasCredentials: hasAnyCredentials,
+      credentials: credentials || null,
+      user,
+    };
+  } catch (error) {
+    console.error("Error checking credentials:", error);
+    return { hasCredentials: false, error: "Internal error" };
+  }
+};
+
 // Save HTML file and return download URL
 const saveReportFile = (content: string, filename: string): string => {
   const reportsDir = ensureReportsDir();
   const filePath = path.join(reportsDir, filename);
-  fs.writeFileSync(filePath, content, 'utf8');
+  fs.writeFileSync(filePath, content, "utf8");
   return `/reports/${filename}`;
 };
 
@@ -69,14 +118,20 @@ function generateSOCReportHTML(params: any): string {
 
       <div class="section">
         <h2>Control Assessment</h2>
-        ${controls.map((control: any, index: number) => `
+        ${controls
+          .map(
+            (control: any, index: number) => `
           <div class="control">
             <div class="control-title">${control.name}</div>
             <p><strong>Description:</strong> ${control.description}</p>
-            <p><strong>Status:</strong> <span class="status ${control.status === 'compliant' ? 'compliant' : 'non-compliant'}">${control.status.toUpperCase()}</span></p>
+            <p><strong>Status:</strong> <span class="status ${
+              control.status === "compliant" ? "compliant" : "non-compliant"
+            }">${control.status.toUpperCase()}</span></p>
             <p><strong>Evidence:</strong> ${control.evidence}</p>
           </div>
-        `).join('')}
+        `
+          )
+          .join("")}
       </div>
 
       <div class="section">
@@ -121,15 +176,29 @@ function generateISOReportHTML(params: any): string {
 
       <div class="section">
         <h2>Requirements Assessment</h2>
-        ${requirements.map((req: any, index: number) => `
+        ${requirements
+          .map(
+            (req: any, index: number) => `
           <div class="requirement">
             <div class="req-title">${req.clause}: ${req.title}</div>
             <p><strong>Description:</strong> ${req.description}</p>
-            <p><strong>Status:</strong> <span class="status ${req.status === 'compliant' ? 'compliant' : req.status === 'partial' ? 'partial' : 'non-compliant'}">${req.status.toUpperCase()}</span></p>
+            <p><strong>Status:</strong> <span class="status ${
+              req.status === "compliant"
+                ? "compliant"
+                : req.status === "partial"
+                ? "partial"
+                : "non-compliant"
+            }">${req.status.toUpperCase()}</span></p>
             <p><strong>Evidence:</strong> ${req.evidence}</p>
-            ${req.gaps ? `<p><strong>Gaps Identified:</strong> ${req.gaps}</p>` : ''}
+            ${
+              req.gaps
+                ? `<p><strong>Gaps Identified:</strong> ${req.gaps}</p>`
+                : ""
+            }
           </div>
-        `).join('')}
+        `
+          )
+          .join("")}
       </div>
 
       <div class="section">
@@ -175,7 +244,9 @@ function generateComplianceReportHTML(params: any): string {
 
       <div class="section">
         <h2>Key Findings</h2>
-        ${findings.map((finding: any, index: number) => `
+        ${findings
+          .map(
+            (finding: any, index: number) => `
           <div class="finding">
             <div class="finding-title">${finding.title}</div>
             <p><strong>Severity:</strong> <span class="severity ${finding.severity.toLowerCase()}">${finding.severity.toUpperCase()}</span></p>
@@ -183,7 +254,9 @@ function generateComplianceReportHTML(params: any): string {
             <p><strong>Impact:</strong> ${finding.impact}</p>
             <p><strong>Recommendation:</strong> ${finding.recommendation}</p>
           </div>
-        `).join('')}
+        `
+          )
+          .join("")}
       </div>
 
       <div class="section">
@@ -200,22 +273,31 @@ const generateSOCTool = tool(
   async ({ organizationName, auditPeriod, controls, findings }) => {
     try {
       // Transform the data to match our HTML generation function
-      const transformedControls = findings.map((finding: any, index: number) => ({
-        name: finding.control,
-        description: `Assessment of ${finding.control} control`,
-        status: finding.status === 'compensating-control' ? 'compliant' : finding.status,
-        evidence: finding.description
-      }));
+      const transformedControls = findings.map(
+        (finding: any, index: number) => ({
+          name: finding.control,
+          description: `Assessment of ${finding.control} control`,
+          status:
+            finding.status === "compensating-control"
+              ? "compliant"
+              : finding.status,
+          evidence: finding.description,
+        })
+      );
 
       const htmlContent = generateSOCReportHTML({
         organizationName,
         assessmentPeriod: auditPeriod,
-        controls: transformedControls
+        controls: transformedControls,
       });
 
       // Generate filename and save file
-      const filename = `SOC2_Report_${organizationName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`;
-      const downloadUrl = `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}` + saveReportFile(htmlContent, filename);
+      const filename = `SOC2_Report_${organizationName.replace(/\s+/g, "_")}_${
+        new Date().toISOString().split("T")[0]
+      }.html`;
+      const downloadUrl =
+        `${process.env.NEXT_PUBLIC_URL || "http://localhost:3001"}` +
+        saveReportFile(htmlContent, filename);
 
       return {
         success: true,
@@ -225,57 +307,93 @@ const generateSOCTool = tool(
         fileName: filename,
         fileSize: `${Math.round(htmlContent.length / 1024)} KB`,
         message: `✅ SOC 2 compliance document generated successfully for ${organizationName}`,
-        summary: `Generated SOC 2 Type II report with ${findings.length} control assessments`
+        summary: `Generated SOC 2 Type II report with ${findings.length} control assessments`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       return {
         success: false,
         error: `Failed to generate SOC document: ${errorMessage}`,
-        documentType: "SOC"
+        documentType: "SOC",
       };
     }
   },
   {
     name: "generate_soc_document",
-    description: "Generate a SOC 2 Type II compliance document in HTML format using REAL audit findings. Must be called AFTER aws_security_audit to use actual compliance data, not sample data.",
+    description:
+      "Generate a SOC 2 Type II compliance document in HTML format using REAL audit findings. Must be called AFTER aws_security_audit to use actual compliance data, not sample data.",
     schema: z.object({
-      organizationName: z.string().describe("Name of the organization being audited"),
-      auditPeriod: z.string().describe("Audit period (e.g., 'January 1, 2024 - December 31, 2024')"),
-      controls: z.array(z.string()).describe("List of SOC controls assessed - derive from real audit findings"),
-      findings: z.array(z.object({
-        control: z.string(),
-        status: z.enum(["compliant", "non-compliant", "compensating-control"]),
-        description: z.string(),
-        recommendation: z.string().optional()
-      })).describe("REAL audit findings for each control - map from actual AWS audit results")
-    })
+      organizationName: z
+        .string()
+        .describe("Name of the organization being audited"),
+      auditPeriod: z
+        .string()
+        .describe("Audit period (e.g., 'January 1, 2024 - December 31, 2024')"),
+      controls: z
+        .array(z.string())
+        .describe(
+          "List of SOC controls assessed - derive from real audit findings"
+        ),
+      findings: z
+        .array(
+          z.object({
+            control: z.string(),
+            status: z.enum([
+              "compliant",
+              "non-compliant",
+              "compensating-control",
+            ]),
+            description: z.string(),
+            recommendation: z.string().optional(),
+          })
+        )
+        .describe(
+          "REAL audit findings for each control - map from actual AWS audit results"
+        ),
+    }),
   }
 );
 
 const generateISOTool = tool(
-  async ({ organizationName, standard, auditPeriod, requirements, compliance }) => {
+  async ({
+    organizationName,
+    standard,
+    auditPeriod,
+    requirements,
+    compliance,
+  }) => {
     try {
       // Transform the data to match our HTML generation function
-      const transformedRequirements = compliance.map((comp: any, index: number) => ({
-        clause: comp.requirement,
-        title: `Requirement ${comp.requirement}`,
-        description: requirements[index] || `Assessment of ${comp.requirement}`,
-        status: comp.status === 'not-applicable' ? 'compliant' : comp.status,
-        evidence: comp.evidence || 'Assessment completed',
-        gaps: comp.notes || ''
-      }));
+      const transformedRequirements = compliance.map(
+        (comp: any, index: number) => ({
+          clause: comp.requirement,
+          title: `Requirement ${comp.requirement}`,
+          description:
+            requirements[index] || `Assessment of ${comp.requirement}`,
+          status: comp.status === "not-applicable" ? "compliant" : comp.status,
+          evidence: comp.evidence || "Assessment completed",
+          gaps: comp.notes || "",
+        })
+      );
 
       const htmlContent = generateISOReportHTML({
         organizationName,
         standard,
         assessmentDate: auditPeriod,
-        requirements: transformedRequirements
+        requirements: transformedRequirements,
       });
 
       // Generate filename and save file
-      const filename = `ISO_${standard.replace(/\s+/g, '_')}_Report_${organizationName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`;
-      const downloadUrl = `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}` + saveReportFile(htmlContent, filename);
+      const filename = `ISO_${standard.replace(
+        /\s+/g,
+        "_"
+      )}_Report_${organizationName.replace(/\s+/g, "_")}_${
+        new Date().toISOString().split("T")[0]
+      }.html`;
+      const downloadUrl =
+        `${process.env.NEXT_PUBLIC_URL || "http://localhost:3001"}` +
+        saveReportFile(htmlContent, filename);
 
       return {
         success: true,
@@ -285,32 +403,48 @@ const generateISOTool = tool(
         fileName: filename,
         fileSize: `${Math.round(htmlContent.length / 1024)} KB`,
         message: `✅ ${standard} compliance document generated successfully for ${organizationName}`,
-        summary: `Generated ${standard} assessment with ${compliance.length} requirement evaluations`
+        summary: `Generated ${standard} assessment with ${compliance.length} requirement evaluations`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       return {
         success: false,
         error: `Failed to generate ISO document: ${errorMessage}`,
-        documentType: "ISO"
+        documentType: "ISO",
       };
     }
   },
   {
     name: "generate_iso_document",
-    description: "Generate an ISO compliance document (ISO 27001, ISO 9001, etc.) in HTML format using REAL audit data. Must be called AFTER aws_security_audit to use actual compliance status.",
+    description:
+      "Generate an ISO compliance document (ISO 27001, ISO 9001, etc.) in HTML format using REAL audit data. Must be called AFTER aws_security_audit to use actual compliance status.",
     schema: z.object({
-      organizationName: z.string().describe("Name of the organization being audited"),
-      standard: z.string().describe("ISO standard (e.g., 'ISO 27001', 'ISO 9001')"),
+      organizationName: z
+        .string()
+        .describe("Name of the organization being audited"),
+      standard: z
+        .string()
+        .describe("ISO standard (e.g., 'ISO 27001', 'ISO 9001')"),
       auditPeriod: z.string().describe("Audit period"),
-      requirements: z.array(z.string()).describe("List of ISO requirements assessed - derive from real audit scope"),
-      compliance: z.array(z.object({
-        requirement: z.string(),
-        status: z.enum(["compliant", "non-compliant", "not-applicable"]),
-        evidence: z.string().optional(),
-        notes: z.string().optional()
-      })).describe("REAL compliance status for each requirement - map from actual audit findings")
-    })
+      requirements: z
+        .array(z.string())
+        .describe(
+          "List of ISO requirements assessed - derive from real audit scope"
+        ),
+      compliance: z
+        .array(
+          z.object({
+            requirement: z.string(),
+            status: z.enum(["compliant", "non-compliant", "not-applicable"]),
+            evidence: z.string().optional(),
+            notes: z.string().optional(),
+          })
+        )
+        .describe(
+          "REAL compliance status for each requirement - map from actual audit findings"
+        ),
+    }),
   }
 );
 
@@ -318,24 +452,33 @@ const generateComplianceReportTool = tool(
   async ({ organizationName, frameworks, auditData, recommendations }) => {
     try {
       // Transform the data to match our HTML generation function
-      const transformedFindings = recommendations.map((rec: any, index: number) => ({
-        title: `Priority ${rec.priority.toUpperCase()}: ${rec.framework}`,
-        severity: rec.priority,
-        description: rec.description,
-        impact: `Affects ${rec.framework} compliance framework`,
-        recommendation: rec.timeline ? `${rec.description} (Timeline: ${rec.timeline})` : rec.description
-      }));
+      const transformedFindings = recommendations.map(
+        (rec: any, index: number) => ({
+          title: `Priority ${rec.priority.toUpperCase()}: ${rec.framework}`,
+          severity: rec.priority,
+          description: rec.description,
+          impact: `Affects ${rec.framework} compliance framework`,
+          recommendation: rec.timeline
+            ? `${rec.description} (Timeline: ${rec.timeline})`
+            : rec.description,
+        })
+      );
 
       const htmlContent = generateComplianceReportHTML({
         organizationName,
-        reportType: frameworks.join(', '),
+        reportType: frameworks.join(", "),
         assessmentDate: new Date().toLocaleDateString(),
-        findings: transformedFindings
+        findings: transformedFindings,
       });
 
       // Generate filename and save file
-      const filename = `Comprehensive_Compliance_Report_${organizationName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`;
-      const downloadUrl = `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}` + saveReportFile(htmlContent, filename);
+      const filename = `Comprehensive_Compliance_Report_${organizationName.replace(
+        /\s+/g,
+        "_"
+      )}_${new Date().toISOString().split("T")[0]}.html`;
+      const downloadUrl =
+        `${process.env.NEXT_PUBLIC_URL || "http://localhost:3001"}` +
+        saveReportFile(htmlContent, filename);
 
       return {
         success: true,
@@ -345,36 +488,50 @@ const generateComplianceReportTool = tool(
         fileName: filename,
         fileSize: `${Math.round(htmlContent.length / 1024)} KB`,
         message: `✅ Comprehensive compliance report generated successfully for ${organizationName}`,
-        summary: `Generated multi-framework report covering ${frameworks.join(', ')} with ${recommendations.length} findings`
+        summary: `Generated multi-framework report covering ${frameworks.join(
+          ", "
+        )} with ${recommendations.length} findings`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       return {
         success: false,
         error: `Failed to generate compliance report: ${errorMessage}`,
-        documentType: "COMPREHENSIVE"
+        documentType: "COMPREHENSIVE",
       };
     }
   },
   {
     name: "generate_compliance_report",
-    description: "Generate a comprehensive compliance report covering multiple frameworks using REAL audit data. Must be called AFTER aws_security_audit to use actual findings.",
+    description:
+      "Generate a comprehensive compliance report covering multiple frameworks using REAL audit data. Must be called AFTER aws_security_audit to use actual findings.",
     schema: z.object({
       organizationName: z.string().describe("Name of the organization"),
-      frameworks: z.array(z.string()).describe("Compliance frameworks covered - based on real audit scope"),
-      auditData: z.object({
-        totalControls: z.number(),
-        compliantControls: z.number(),
-        criticalFindings: z.number(),
-        riskLevel: z.enum(["low", "medium", "high", "critical"])
-      }).describe("REAL summary audit data from actual security audit results"),
-      recommendations: z.array(z.object({
-        priority: z.enum(["high", "medium", "low"]),
-        framework: z.string(),
-        description: z.string(),
-        timeline: z.string().optional()
-      })).describe("REAL implementation recommendations based on actual audit findings")
-    })
+      frameworks: z
+        .array(z.string())
+        .describe("Compliance frameworks covered - based on real audit scope"),
+      auditData: z
+        .object({
+          totalControls: z.number(),
+          compliantControls: z.number(),
+          criticalFindings: z.number(),
+          riskLevel: z.enum(["low", "medium", "high", "critical"]),
+        })
+        .describe("REAL summary audit data from actual security audit results"),
+      recommendations: z
+        .array(
+          z.object({
+            priority: z.enum(["high", "medium", "low"]),
+            framework: z.string(),
+            description: z.string(),
+            timeline: z.string().optional(),
+          })
+        )
+        .describe(
+          "REAL implementation recommendations based on actual audit findings"
+        ),
+    }),
   }
 );
 
@@ -382,7 +539,21 @@ const generateComplianceReportTool = tool(
 const awsSecurityAuditTool = tool(
   async ({ region, accountId }) => {
     try {
-      // Mock AWS audit results based on the provided data
+      // Check if user has credentials
+      const credentialsCheck = await checkUserCredentials();
+
+      if (!credentialsCheck.hasCredentials) {
+        return {
+          success: false,
+          error:
+            "❌ Cloud provider credentials required. Please configure your AWS credentials in Settings before running security audits.",
+          provider: "AWS",
+          requiresCredentials: true,
+        };
+      }
+
+      // If credentials exist, you could potentially call the real auditron backend
+      // For now, we'll return the mock data but indicate credentials are configured
       const auditResults = {
         accountId: accountId || "135167709853",
         region: region || "us-east-1",
@@ -391,18 +562,21 @@ const awsSecurityAuditTool = tool(
         passedChecks: 6,
         failedChecks: 9,
         criticalFailures: 1,
+        credentialsConfigured: true,
         checks: [
           {
             checkId: "AWS-S3-PUBLIC-ACCESS-V1",
             name: "S3 Bucket Public Access",
             status: "FAILURE",
             severity: "HIGH",
-            description: "2 out of 5 S3 buckets were found to have public access enabled or misconfigured",
+            description:
+              "2 out of 5 S3 buckets were found to have public access enabled or misconfigured",
             details: [
               "auditron-public-bucket-tharun: One or more public access block settings are false",
-              "elasticbeanstalk-us-east-1-135167709853: One or more public access block settings are false"
+              "elasticbeanstalk-us-east-1-135167709853: One or more public access block settings are false",
             ],
-            recommendation: "Enable S3 bucket public access block settings and review bucket policies"
+            recommendation:
+              "Enable S3 bucket public access block settings and review bucket policies",
           },
           {
             checkId: "AWS-EBS-ENCRYPTION-V1",
@@ -411,7 +585,8 @@ const awsSecurityAuditTool = tool(
             severity: "MEDIUM",
             description: "No EBS volumes found in the us-east-1 region",
             details: [],
-            recommendation: "Ensure EBS encryption is enabled for any future volumes"
+            recommendation:
+              "Ensure EBS encryption is enabled for any future volumes",
           },
           {
             checkId: "AWS-EFS-ENCRYPTION-IN-TRANSIT-V1",
@@ -420,7 +595,8 @@ const awsSecurityAuditTool = tool(
             severity: "MEDIUM",
             description: "No EFS file systems found in the us-east-1 region",
             details: [],
-            recommendation: "Ensure EFS encryption in transit is enabled for any future file systems"
+            recommendation:
+              "Ensure EFS encryption in transit is enabled for any future file systems",
           },
           {
             checkId: "AWS-RDS-PUBLIC-ACCESS-V1",
@@ -429,16 +605,18 @@ const awsSecurityAuditTool = tool(
             severity: "HIGH",
             description: "1 out of 1 RDS instances is publicly accessible",
             details: ["database-1-instance-1: Publicly accessible"],
-            recommendation: "Disable public accessibility for RDS instances and use VPC security groups"
+            recommendation:
+              "Disable public accessibility for RDS instances and use VPC security groups",
           },
           {
             checkId: "AWS-RDS-STORAGE-ENCRYPTION-V1",
             name: "RDS Storage Encryption",
             status: "FAILURE",
             severity: "HIGH",
-            description: "1 out of 1 RDS instances has storage encryption disabled",
+            description:
+              "1 out of 1 RDS instances has storage encryption disabled",
             details: ["database-1-instance-1: Storage encryption disabled"],
-            recommendation: "Enable storage encryption for RDS instances"
+            recommendation: "Enable storage encryption for RDS instances",
           },
           {
             checkId: "AWS-EBS-SNAPSHOT-PUBLIC-V1",
@@ -447,16 +625,18 @@ const awsSecurityAuditTool = tool(
             severity: "HIGH",
             description: "No publicly shared EBS snapshots found",
             details: [],
-            recommendation: "Continue to ensure EBS snapshots are not publicly shared"
+            recommendation:
+              "Continue to ensure EBS snapshots are not publicly shared",
           },
           {
             checkId: "AWS-DYNAMODB-PITR-V1",
             name: "DynamoDB Point-in-Time Recovery",
             status: "FAILURE",
             severity: "MEDIUM",
-            description: "1 out of 1 DynamoDB tables does not have Point-in-Time Recovery enabled",
+            description:
+              "1 out of 1 DynamoDB tables does not have Point-in-Time Recovery enabled",
             details: ["auditron-test-table: PITR not enabled"],
-            recommendation: "Enable Point-in-Time Recovery for DynamoDB tables"
+            recommendation: "Enable Point-in-Time Recovery for DynamoDB tables",
           },
           {
             checkId: "AWS-IAM-MFA-CONSOLE-V1",
@@ -465,7 +645,7 @@ const awsSecurityAuditTool = tool(
             severity: "HIGH",
             description: "All IAM users with console access have MFA enabled",
             details: [],
-            recommendation: "Continue to enforce MFA for all console users"
+            recommendation: "Continue to enforce MFA for all console users",
           },
           {
             checkId: "AWS-IAM-ROOT-MFA-V1",
@@ -474,25 +654,31 @@ const awsSecurityAuditTool = tool(
             severity: "CRITICAL",
             description: "The root account has MFA enabled",
             details: [],
-            recommendation: "Continue to maintain MFA on root account and minimize root usage"
+            recommendation:
+              "Continue to maintain MFA on root account and minimize root usage",
           },
           {
             checkId: "AWS-VPC-SG-RESTRICTED-SSH-V1",
             name: "Security Group SSH Restrictions",
             status: "FAILURE",
             severity: "HIGH",
-            description: "1 out of 2 security groups allows unrestricted SSH access",
-            details: ["sg-0ba405eb591f7b8cc (auditron-ssh-test-sg): Allows SSH from 0.0.0.0/0"],
-            recommendation: "Restrict SSH access to specific IP ranges or use Session Manager"
+            description:
+              "1 out of 2 security groups allows unrestricted SSH access",
+            details: [
+              "sg-0ba405eb591f7b8cc (auditron-ssh-test-sg): Allows SSH from 0.0.0.0/0",
+            ],
+            recommendation:
+              "Restrict SSH access to specific IP ranges or use Session Manager",
           },
           {
             checkId: "AWS-KMS-KEY-ROTATION-V1",
             name: "KMS Key Rotation",
             status: "FAILURE",
             severity: "MEDIUM",
-            description: "1 out of 1 KMS keys does not have automatic key rotation enabled",
+            description:
+              "1 out of 1 KMS keys does not have automatic key rotation enabled",
             details: ["Key rotation disabled"],
-            recommendation: "Enable automatic key rotation for KMS keys"
+            recommendation: "Enable automatic key rotation for KMS keys",
           },
           {
             checkId: "AWS-CLOUDTRAIL-ENABLED-V1",
@@ -501,7 +687,8 @@ const awsSecurityAuditTool = tool(
             severity: "CRITICAL",
             description: "No CloudTrail trails are configured in this account",
             details: ["No trails found"],
-            recommendation: "Enable CloudTrail with multi-region trail and log file validation"
+            recommendation:
+              "Enable CloudTrail with multi-region trail and log file validation",
           },
           {
             checkId: "AWS-CONFIG-ENABLED-V1",
@@ -510,7 +697,8 @@ const awsSecurityAuditTool = tool(
             severity: "HIGH",
             description: "AWS Config is not enabled in the us-east-1 region",
             details: ["Config not enabled"],
-            recommendation: "Enable AWS Config for configuration compliance monitoring"
+            recommendation:
+              "Enable AWS Config for configuration compliance monitoring",
           },
           {
             checkId: "AWS-GUARDDUTY-ENABLED-V1",
@@ -519,7 +707,8 @@ const awsSecurityAuditTool = tool(
             severity: "HIGH",
             description: "GuardDuty is not enabled in the us-east-1 region",
             details: ["GuardDuty not enabled"],
-            recommendation: "Enable GuardDuty for threat detection and monitoring"
+            recommendation:
+              "Enable GuardDuty for threat detection and monitoring",
           },
           {
             checkId: "AWS-SECRETSMANAGER-ROTATION-V1",
@@ -528,24 +717,26 @@ const awsSecurityAuditTool = tool(
             severity: "MEDIUM",
             description: "All secrets checked have rotation enabled",
             details: [],
-            recommendation: "Continue to maintain automatic rotation for secrets"
-          }
+            recommendation:
+              "Continue to maintain automatic rotation for secrets",
+          },
         ],
         summary: {
           criticalIssues: [
             "CloudTrail logging is not enabled - essential for audit trails and compliance",
             "RDS instances are publicly accessible - immediate security risk",
-            "S3 buckets have public access enabled - potential data exposure"
+            "S3 buckets have public access enabled - potential data exposure",
           ],
           highPriorityActions: [
             "Enable CloudTrail with multi-region coverage",
             "Disable public access for RDS instances",
             "Configure S3 bucket public access blocks",
             "Enable AWS Config and GuardDuty",
-            "Restrict SSH access in security groups"
+            "Restrict SSH access in security groups",
           ],
-          complianceImpact: "Current configuration poses significant risks for SOC 2, ISO 27001, and other compliance frameworks due to missing logging, monitoring, and access controls."
-        }
+          complianceImpact:
+            "Current configuration poses significant risks for SOC 2, ISO 27001, and other compliance frameworks due to missing logging, monitoring, and access controls.",
+        },
       };
 
       return {
@@ -553,27 +744,38 @@ const awsSecurityAuditTool = tool(
         provider: "AWS",
         auditType: "Security Compliance Audit",
         results: auditResults,
-        fileName: `AWS_Security_Audit_${auditResults.accountId}_${new Date().toISOString().split('T')[0]}.json`,
-        fileSize: `${Math.round(JSON.stringify(auditResults).length / 1024)} KB`,
-        message: `✅ AWS security audit completed for account ${accountId || auditResults.accountId} in region ${region || auditResults.region}`,
-        summary: `Found ${auditResults.criticalFailures} critical failures and ${auditResults.failedChecks} total failures out of ${auditResults.totalChecks} checks`
+        fileName: `AWS_Security_Audit_${auditResults.accountId}_${
+          new Date().toISOString().split("T")[0]
+        }.json`,
+        fileSize: `${Math.round(
+          JSON.stringify(auditResults).length / 1024
+        )} KB`,
+        message: `✅ AWS security audit completed for account ${
+          accountId || auditResults.accountId
+        } in region ${region || auditResults.region}`,
+        summary: `Found ${auditResults.criticalFailures} critical failures and ${auditResults.failedChecks} total failures out of ${auditResults.totalChecks} checks`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       return {
         success: false,
         error: `Failed to perform AWS audit: ${errorMessage}`,
-        provider: "AWS"
+        provider: "AWS",
       };
     }
   },
   {
     name: "aws_security_audit",
-    description: "Perform a comprehensive AWS security audit checking for common misconfigurations and compliance issues",
+    description:
+      "Perform a comprehensive AWS security audit checking for common misconfigurations and compliance issues",
     schema: z.object({
-      region: z.string().optional().describe("AWS region to audit (defaults to us-east-1)"),
-      accountId: z.string().optional().describe("AWS account ID (optional)")
-    })
+      region: z
+        .string()
+        .optional()
+        .describe("AWS region to audit (defaults to us-east-1)"),
+      accountId: z.string().optional().describe("AWS account ID (optional)"),
+    }),
   }
 );
 
@@ -581,7 +783,10 @@ class GeminiService {
   private mcpClient: any;
   private langchainModel: ChatGoogleGenerativeAI;
   private agent: any;
-  private conversationHistory: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [];
+  private conversationHistory: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> = [];
 
   constructor() {
     this.langchainModel = new ChatGoogleGenerativeAI({
@@ -603,7 +808,10 @@ class GeminiService {
   }
 
   // Add methods to manage conversation history
-  private addToHistory(role: 'user' | 'assistant' | 'system', content: string): void {
+  private addToHistory(
+    role: "user" | "assistant" | "system",
+    content: string
+  ): void {
     this.conversationHistory.push({ role, content });
     // Keep only the last 20 messages to prevent context overflow
     if (this.conversationHistory.length > 20) {
@@ -611,7 +819,10 @@ class GeminiService {
     }
   }
 
-  private getConversationHistory(): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+  private getConversationHistory(): Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> {
     return [...this.conversationHistory];
   }
 
@@ -621,7 +832,10 @@ class GeminiService {
   }
 
   // Public method to get conversation history for debugging
-  public getHistory(): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+  public getHistory(): Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }> {
     return this.getConversationHistory();
   }
 
@@ -635,7 +849,11 @@ class GeminiService {
       const mcpTools = await this.mcpClient.getTools();
 
       // Add our custom document generation tools
-      const customTools = [generateSOCTool, generateISOTool, generateComplianceReportTool];
+      const customTools = [
+        generateSOCTool,
+        generateISOTool,
+        generateComplianceReportTool,
+      ];
 
       // Combine MCP tools with custom tools
       const allTools = [...mcpTools, ...customTools];
@@ -646,7 +864,9 @@ class GeminiService {
         tools: allTools,
       });
 
-      console.log("LangChain agent initialized with MCP and custom document generation tools");
+      console.log(
+        "LangChain agent initialized with MCP and custom document generation tools"
+      );
     } catch (error) {
       console.error("Failed to initialize LangChain agent:", error);
     }
@@ -659,7 +879,7 @@ class GeminiService {
 
     await this.initializeAgent();
 
-    this.addToHistory('user', message);
+    this.addToHistory("user", message);
 
     // Use LangChain agent if available
     if (this.agent) {
@@ -714,7 +934,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
       // Build message history for context
       const messageHistory = [
         { role: "system", content: systemInstructions },
-        ...this.getConversationHistory()
+        ...this.getConversationHistory(),
       ];
 
       const payload = {
@@ -791,7 +1011,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
 
         // Add assistant response to history
         if (assistantResponse) {
-          this.addToHistory('assistant', assistantResponse);
+          this.addToHistory("assistant", assistantResponse);
         }
 
         yield { type: "complete", content: "" };
@@ -817,7 +1037,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
     // }
 
     // Add user message to history
-    this.addToHistory('user', message);
+    this.addToHistory("user", message);
 
     // Use LangChain agent if available
     if (this.agent) {
@@ -870,7 +1090,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
       // Build message history for context
       const messageHistory = [
         { role: "system", content: systemInstructions },
-        ...this.getConversationHistory()
+        ...this.getConversationHistory(),
       ];
 
       const payload = {
@@ -884,7 +1104,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
         response?.messages?.slice(-1)[0]?.content || "No response from agent";
 
       // Add assistant response to history
-      this.addToHistory('assistant', responseText);
+      this.addToHistory("assistant", responseText);
 
       return responseText;
     }
@@ -895,7 +1115,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
   resetChat(): void {
     // Clear conversation history
     this.clearHistory();
-    
+
     if (this.agent) {
       // Reset agent if needed
       this.initializeAgent();
@@ -910,9 +1130,9 @@ const geminiService = new GeminiService();
 export async function PATCH(request: NextRequest) {
   try {
     await geminiService.initializeAgent();
-    return NextResponse.json({ 
-      success: true, 
-      message: "Agent initialized successfully" 
+    return NextResponse.json({
+      success: true,
+      message: "Agent initialized successfully",
     });
   } catch (error) {
     console.error("Error initializing agent:", error);
@@ -934,8 +1154,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Received message:', message);
-    console.log('Current conversation history length:', geminiService.getHistoryLength());
+    console.log("Received message:", message);
+    console.log(
+      "Current conversation history length:",
+      geminiService.getHistoryLength()
+    );
 
     // Handle streaming requests
     if (stream) {
@@ -1001,10 +1224,10 @@ export async function PUT(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const history = geminiService.getHistory();
-    return NextResponse.json({ 
+    return NextResponse.json({
       history,
       length: history.length,
-      message: "Conversation history retrieved successfully"
+      message: "Conversation history retrieved successfully",
     });
   } catch (error) {
     console.error("Error getting conversation history:", error);

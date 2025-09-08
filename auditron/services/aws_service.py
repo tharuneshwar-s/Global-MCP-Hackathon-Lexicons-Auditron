@@ -2,19 +2,32 @@
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
 import os
+from typing import Optional
 
-def check_s3_public_access():
+def get_aws_client(service_name: str, aws_credentials: Optional['AWSCredentials'] = None):
+    """Helper function to create AWS client with provided credentials or environment variables."""
+    if aws_credentials:
+        return boto3.client(
+            service_name,
+            aws_access_key_id=aws_credentials.access_key_id,
+            aws_secret_access_key=aws_credentials.secret_access_key,
+            region_name=aws_credentials.region
+        )
+    else:
+        return boto3.client(
+            service_name,
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_REGION")
+        )
+
+def check_s3_public_access(aws_credentials: Optional['AWSCredentials'] = None):
     """
     Checks all S3 buckets for public access blocks.
     Returns a formatted report.
     """
     try:
-        s3_client = boto3.client(
-            's3',
-            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            region_name=os.getenv("AWS_REGION")
-        )
+        s3_client = get_aws_client('s3', aws_credentials)
         
         buckets = s3_client.list_buckets().get('Buckets', [])
         if not buckets:
@@ -59,24 +72,19 @@ def check_s3_public_access():
             }
 
     except NoCredentialsError:
-        return {"status": "ERROR", "summary": "AWS credentials not found. Skipping check."}
+        return {"status": "ERROR", "summary": "AWS credentials not found. Skipping check.", "evidence": {}}
     except Exception as e:
-        return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
+        return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}", "evidence": {"error": str(e)}}
 
 
-def check_ebs_encryption():
+def check_ebs_encryption(aws_credentials: Optional['AWSCredentials'] = None):
     """
     Checks all EBS volumes for encryption.
     Returns a formatted report.
     """
     try:
         # Note: EBS is regional, so we check the configured region.
-        ec2_client = boto3.client(
-            'ec2',
-            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            region_name=os.getenv("AWS_REGION")
-        )
+        ec2_client = get_aws_client('ec2', aws_credentials)
         
         volumes = ec2_client.describe_volumes().get('Volumes', [])
         if not volumes:
@@ -115,23 +123,18 @@ def check_ebs_encryption():
             }
 
     except NoCredentialsError:
-        return {"status": "ERROR", "summary": "AWS credentials not found. Skipping check."}
+        return {"status": "ERROR", "summary": "AWS credentials not found. Skipping check.", "evidence": {}}
     except Exception as e:
-        return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
+        return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}", "evidence": {"error": str(e)}}
 
 
-def check_efs_encryption_in_transit():
+def check_efs_encryption_in_transit(aws_credentials: Optional['AWSCredentials'] = None):
     """
     Checks all EFS file systems to ensure encryption in transit is enforced.
     Returns a formatted report.
     """
     try:
-        efs_client = boto3.client(
-            'efs',
-            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            region_name=os.getenv("AWS_REGION")
-        )
+        efs_client = get_aws_client('efs', aws_credentials)
         
         filesystems = efs_client.describe_file_systems().get('FileSystems', [])
         if not filesystems:
@@ -179,15 +182,15 @@ def check_efs_encryption_in_transit():
             }
 
     except NoCredentialsError:
-        return {"status": "ERROR", "summary": "AWS credentials not found. Skipping check."}
+        return {"status": "ERROR", "summary": "AWS credentials not found. Skipping check.", "evidence": {}}
     except Exception as e:
-        return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
+        return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}", "evidence": {"error": str(e)}}
 
 
-def check_rds_public_access():
+def check_rds_public_access(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks all RDS instances to see if they are publicly accessible."""
     try:
-        rds_client = boto3.client('rds', region_name=os.getenv("AWS_REGION"))
+        rds_client = get_aws_client('rds', aws_credentials)
         paginator = rds_client.get_paginator('describe_db_instances')
         pages = paginator.paginate()
         
@@ -228,10 +231,10 @@ def check_rds_public_access():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_rds_storage_encryption():
+def check_rds_storage_encryption(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks all RDS instances for storage encryption."""
     try:
-        rds_client = boto3.client('rds', region_name=os.getenv("AWS_REGION"))
+        rds_client = get_aws_client('rds', aws_credentials)
         paginator = rds_client.get_paginator('describe_db_instances')
         pages = paginator.paginate()
         
@@ -272,10 +275,10 @@ def check_rds_storage_encryption():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_ebs_snapshot_public():
+def check_ebs_snapshot_public(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks all EBS snapshots to see if they are publicly shared."""
     try:
-        ec2_client = boto3.client('ec2', region_name=os.getenv("AWS_REGION"))
+        ec2_client = get_aws_client('ec2', aws_credentials)
         # We must specify the owner as 'self' to only check our own snapshots
         snapshots = ec2_client.describe_snapshots(OwnerIds=['self']).get('Snapshots', [])
 
@@ -317,10 +320,10 @@ def check_ebs_snapshot_public():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_dynamodb_pitr():
+def check_dynamodb_pitr(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks all DynamoDB tables to ensure Point-in-Time Recovery is enabled."""
     try:
-        dynamodb_client = boto3.client('dynamodb', region_name=os.getenv("AWS_REGION"))
+        dynamodb_client = get_aws_client('dynamodb', aws_credentials)
         paginator = dynamodb_client.get_paginator('list_tables')
         
         all_tables = []
@@ -360,10 +363,10 @@ def check_dynamodb_pitr():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_iam_mfa_console():
+def check_iam_mfa_console(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks if IAM users with a console password have MFA enabled."""
     try:
-        iam_client = boto3.client('iam')
+        iam_client = get_aws_client('iam', aws_credentials)
         paginator = iam_client.get_paginator('list_users')
         
         all_users = []
@@ -414,10 +417,10 @@ def check_iam_mfa_console():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_iam_root_mfa():
+def check_iam_root_mfa(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks if the AWS account root user has MFA enabled."""
     try:
-        iam_client = boto3.client('iam')
+        iam_client = get_aws_client('iam', aws_credentials)
         summary = iam_client.get_account_summary()
         
         # The summary map returns 1 if MFA is enabled for the root user, 0 otherwise.
@@ -436,10 +439,10 @@ def check_iam_root_mfa():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_vpc_sg_restricted_ssh():
+def check_vpc_sg_restricted_ssh(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks for security groups that allow unrestricted inbound SSH traffic (from 0.0.0.0/0)."""
     try:
-        ec2_client = boto3.client('ec2', region_name=os.getenv("AWS_REGION"))
+        ec2_client = get_aws_client('ec2', aws_credentials)
         sgs = ec2_client.describe_security_groups().get('SecurityGroups', [])
 
         if not sgs:
@@ -485,10 +488,10 @@ def check_vpc_sg_restricted_ssh():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_kms_key_rotation():
+def check_kms_key_rotation(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks if automatic key rotation is enabled for customer-managed KMS keys."""
     try:
-        kms_client = boto3.client('kms', region_name=os.getenv("AWS_REGION"))
+        kms_client = get_aws_client('kms', aws_credentials)
         paginator = kms_client.get_paginator('list_keys')
         
         customer_managed_keys = []
@@ -531,10 +534,10 @@ def check_kms_key_rotation():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_cloudtrail_enabled():
+def check_cloudtrail_enabled(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks if a multi-region CloudTrail is enabled and logging."""
     try:
-        cloudtrail_client = boto3.client('cloudtrail', region_name=os.getenv("AWS_REGION"))
+        cloudtrail_client = get_aws_client('cloudtrail', aws_credentials)
         trails = cloudtrail_client.describe_trails().get('trailList', [])
 
         if not trails:
@@ -576,10 +579,10 @@ def check_cloudtrail_enabled():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_config_enabled():
+def check_config_enabled(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks if AWS Config is enabled in the region."""
     try:
-        config_client = boto3.client('config', region_name=os.getenv("AWS_REGION"))
+        config_client = get_aws_client('config', aws_credentials)
         recorders = config_client.describe_configuration_recorders().get('ConfigurationRecorders', [])
 
         if not recorders:
@@ -607,10 +610,10 @@ def check_config_enabled():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_guardduty_enabled():
+def check_guardduty_enabled(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks if GuardDuty is enabled in the region."""
     try:
-        guardduty_client = boto3.client('guardduty', region_name=os.getenv("AWS_REGION"))
+        guardduty_client = get_aws_client('guardduty', aws_credentials)
         detectors = guardduty_client.list_detectors().get('DetectorIds', [])
 
         if detectors:
@@ -638,10 +641,10 @@ def check_guardduty_enabled():
     except Exception as e:
         return {"status": "ERROR", "summary": f"An unexpected error occurred: {str(e)}"}
 
-def check_secretsmanager_rotation():
+def check_secretsmanager_rotation(aws_credentials: Optional['AWSCredentials'] = None):
     """Checks if secrets in Secrets Manager are configured for automatic rotation."""
     try:
-        secrets_client = boto3.client('secretsmanager', region_name=os.getenv("AWS_REGION"))
+        secrets_client = get_aws_client('secretsmanager', aws_credentials)
         paginator = secrets_client.get_paginator('list_secrets')
         
         all_secrets = []

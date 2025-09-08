@@ -2,14 +2,32 @@
 from google.cloud import storage
 from google.api_core import exceptions
 import os
+import json
+import tempfile
+from typing import Optional
 
-def check_gcp_storage_public():
+def get_gcp_client(gcp_credentials: Optional['GCPCredentials'] = None):
+    """Helper function to create GCP client with provided credentials or environment variables."""
+    if gcp_credentials:
+        # Create a temporary file with the service account JSON
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
+            json.dump(gcp_credentials.service_account_json, temp_file)
+            temp_file_path = temp_file.name
+        
+        storage_client = storage.Client.from_service_account_json(temp_file_path)
+        # Clean up the temporary file
+        os.unlink(temp_file_path)
+        return storage_client
+    else:
+        return storage.Client.from_service_account_json(os.getenv("GCP_SERVICE_ACCOUNT_FILE"))
+
+def check_gcp_storage_public(gcp_credentials: Optional['GCPCredentials'] = None):
     """
     Checks all GCP Cloud Storage buckets for public access.
     Returns a formatted report.
     """
     try:
-        storage_client = storage.Client.from_service_account_json(os.getenv("GCP_SERVICE_ACCOUNT_FILE"))
+        storage_client = get_gcp_client(gcp_credentials)
         buckets = list(storage_client.list_buckets())
         
         if not buckets:

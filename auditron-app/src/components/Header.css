@@ -2,7 +2,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -65,6 +65,35 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+
+
+.warning-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 .username {
   font-size: 0.875rem;
   font-weight: 500;
@@ -86,6 +115,61 @@
 .logout-button:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
+}
+
+/* Credentials Warning Banner */
+.credentials-warning {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+  color: #92400e;
+  padding: 12px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #d97706;
+}
+
+.warning-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.warning-icon {
+  font-size: 18px;
+}
+
+.setup-credentials-button {
+  background: #92400e;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.setup-credentials-button:hover {
+  background: #7c2d12;
+  transform: translateY(-1px);
+}
+
+.dismiss-warning-button {
+  background: none;
+  border: none;
+  color: #92400e;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.dismiss-warning-button:hover {
+  background: rgba(146, 64, 14, 0.1);
 }
 
 .reset-button {
@@ -111,17 +195,17 @@
     gap: 15px;
     text-align: center;
   }
-  
+
   .header-actions {
     justify-content: center;
   }
-  
+
   .user-info {
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
   }
-  
+
   .username {
     font-size: 0.8rem;
   }
@@ -132,7 +216,7 @@
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .user-info {
     padding: 0.5rem 0.75rem;
   }

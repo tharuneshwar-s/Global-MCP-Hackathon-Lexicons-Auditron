@@ -1,9 +1,29 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+
+
+class AWSCredentials(BaseModel):
+    access_key_id: str
+    secret_access_key: str
+    region: str
+
+
+class AzureCredentials(BaseModel):
+    tenant_id: str
+    client_id: str
+    client_secret: str
+    subscription_id: str
+
+
+class GCPCredentials(BaseModel):
+    service_account_json: Dict[str, Any]  # The parsed JSON object
 
 
 class AuditRequest(BaseModel):
     controls: List[str] = Field(..., example=["AWS-S3-PUBLIC-ACCESS-V1"])
+    aws_credentials: Optional[AWSCredentials] = None
+    azure_credentials: Optional[AzureCredentials] = None
+    gcp_credentials: Optional[GCPCredentials] = None
 
 
 class AuditResult(BaseModel):
