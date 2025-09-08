@@ -1,0 +1,146 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>SOC 2 Report - My Organization</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .control { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .control-title { font-weight: bold; color: #2c3e50; }
+        .status { padding: 5px 10px; border-radius: 3px; font-size: 12px; }
+        .compliant { background-color: #d4edda; color: #155724; }
+        .non-compliant { background-color: #f8d7da; color: #721c24; }
+      </style>
+      
+    </head>
+    <body  onload="window.print()">
+      <div class="header">
+        <h1>SOC 2 Type II Report</h1>
+        <h2>My Organization</h2>
+        <p>Assessment Period: Current Period</p>
+      </div>
+
+      <div class="section">
+        <h2>Executive Summary</h2>
+        <p>This SOC 2 Type II report evaluates the effectiveness of My Organization's controls relevant to security, availability, processing integrity, confidentiality, and privacy.</p>
+      </div>
+
+      <div class="section">
+        <h2>Control Assessment</h2>
+        
+          <div class="control">
+            <div class="control-title">AWS-S3-PUBLIC-ACCESS-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-S3-PUBLIC-ACCESS-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> Two S3 buckets are publicly accessible.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-EBS-ENCRYPTION-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-EBS-ENCRYPTION-V1 control</p>
+            <p><strong>Status:</strong> <span class="status compliant">COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> No EBS volumes found in the region us-east-1.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-EFS-ENCRYPTION-IN-TRANSIT-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-EFS-ENCRYPTION-IN-TRANSIT-V1 control</p>
+            <p><strong>Status:</strong> <span class="status compliant">COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> No EFS file systems found in the region us-east-1.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-RDS-PUBLIC-ACCESS-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-RDS-PUBLIC-ACCESS-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> One RDS instance is publicly accessible.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-RDS-STORAGE-ENCRYPTION-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-RDS-STORAGE-ENCRYPTION-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> One RDS instance has storage encryption disabled.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-EBS-SNAPSHOT-PUBLIC-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-EBS-SNAPSHOT-PUBLIC-V1 control</p>
+            <p><strong>Status:</strong> <span class="status compliant">COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> No EBS snapshots found.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-DYNAMODB-PITR-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-DYNAMODB-PITR-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> One DynamoDB table does not have Point-in-Time Recovery (PITR) enabled.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-IAM-MFA-CONSOLE-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-IAM-MFA-CONSOLE-V1 control</p>
+            <p><strong>Status:</strong> <span class="status compliant">COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> All IAM users with console access have MFA enabled.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-IAM-ROOT-MFA-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-IAM-ROOT-MFA-V1 control</p>
+            <p><strong>Status:</strong> <span class="status compliant">COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> Root account has MFA enabled.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-VPC-SG-RESTRICTED-SSH-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-VPC-SG-RESTRICTED-SSH-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> One security group allows unrestricted SSH (0.0.0.0/0) access.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-KMS-KEY-ROTATION-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-KMS-KEY-ROTATION-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> One customer-managed KMS key does not have automatic key rotation enabled.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-CLOUDTRAIL-ENABLED-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-CLOUDTRAIL-ENABLED-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> CRITICAL: No CloudTrail trails are configured in this account.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-CONFIG-ENABLED-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-CONFIG-ENABLED-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> AWS Config is not enabled in the region us-east-1.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-GUARDDUTY-ENABLED-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-GUARDDUTY-ENABLED-V1 control</p>
+            <p><strong>Status:</strong> <span class="status non-compliant">NON-COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> GuardDuty is not enabled in the region us-east-1.</p>
+          </div>
+        
+          <div class="control">
+            <div class="control-title">AWS-SECRETSMANAGER-ROTATION-V1</div>
+            <p><strong>Description:</strong> Assessment of AWS-SECRETSMANAGER-ROTATION-V1 control</p>
+            <p><strong>Status:</strong> <span class="status compliant">COMPLIANT</span></p>
+            <p><strong>Evidence:</strong> All secrets have rotation enabled.</p>
+          </div>
+        
+      </div>
+
+      <div class="section">
+        <h2>Conclusion</h2>
+        <p>The assessment has been completed in accordance with the AICPA's SOC 2 reporting standards.</p>
+      </div>
+    </body>
+    </html>
+  

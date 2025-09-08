@@ -38,7 +38,7 @@ const markdownToHtml = (text: string) => {
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, currentStatus, streamingMessage }) => {
     return (
-        <div className="messages sizer h-[83vh]">
+        <div className="messages sizer h-[75vh]">
             {messages.map((msg, i) => (
                 <div key={i} className={`message ${msg.role}`}>
                     <div className="message-avatar">
@@ -73,7 +73,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, c
                                 <div className="tool-calling-status">
                                     <div className="tool-icon">
                                         {currentStatus.includes('Calling') ? '🔧' : 
-                                         currentStatus.includes('Processing') ? '📊' : 
+                                         currentStatus.includes('Processing') ? '' : 
                                          currentStatus.includes('Generating') ? '✨' : '🔍'}
                                     </div>
                                     <div className="tool-text">

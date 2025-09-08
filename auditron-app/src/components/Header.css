@@ -3,29 +3,89 @@
   color: white;
   padding: 20px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sidebar-toggle {
+  /* background: rgba(255, 255, 255, 0.1); */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .header-content {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0 auto;
+  flex-direction: column;
 }
 
-.header-title {
-  text-align: left;
-}
-
-.header-title h1 {
+.header-content h1 {
   margin: 0 0 5px 0;
   font-size: 1.8em;
   font-weight: 600;
 }
 
-.header-title p {
+.header-content p {
   margin: 0;
   opacity: 0.9;
   font-size: 0.9em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.username {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.95;
+}
+
+.logout-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 12px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.logout-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .reset-button {
@@ -36,20 +96,44 @@
   border-radius: 20px;
   cursor: pointer;
   font-size: 12px;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
 .reset-button:hover {
   background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {
-  .header-content {
+  .header {
     flex-direction: column;
-    gap: 10px;
-  }
-
-  .header-title {
+    gap: 15px;
     text-align: center;
+  }
+  
+  .header-actions {
+    justify-content: center;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .username {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .user-info {
+    padding: 0.5rem 0.75rem;
   }
 }

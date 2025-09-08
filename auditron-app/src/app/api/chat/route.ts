@@ -906,6 +906,23 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
 // Create a singleton instance
 const geminiService = new GeminiService();
 
+// Initialize agent endpoint
+export async function PATCH(request: NextRequest) {
+  try {
+    await geminiService.initializeAgent();
+    return NextResponse.json({ 
+      success: true, 
+      message: "Agent initialized successfully" 
+    });
+  } catch (error) {
+    console.error("Error initializing agent:", error);
+    return NextResponse.json(
+      { error: "Failed to initialize agent" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { message, stream } = await request.json();

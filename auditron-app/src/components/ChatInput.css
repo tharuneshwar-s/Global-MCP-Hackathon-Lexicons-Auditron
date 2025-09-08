@@ -1,82 +1,115 @@
 .input-container {
   display: flex;
-  padding: 16px 20px;
-  background: #ffffff;
+  background: linear-gradient(145deg, #f8f9fa, #ffffff);
   border-top: 1px solid #e9ecef;
-  gap: 8px;
+  gap: 12px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .input-wrapper {
   flex: 1;
   position: relative;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.input-wrapper:focus-within {
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 .chat-input {
   width: 100%;
-  padding: 10px 40px 10px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 16px 60px 16px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.2s ease;
   font-family: inherit;
   resize: none;
-  min-height: 40px;
-  max-height: 100px;
-  line-height: 1.4;
-  background: #ffffff;
-}
-
-.chat-input:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+  min-height: 52px;
+  max-height: 120px;
+  line-height: 1.5;
+  background: transparent;
+  color: #2c3e50;
 }
 
 .chat-input:disabled {
   background: #f9fafb;
-  border-color: #e5e7eb;
   cursor: not-allowed;
   color: #9ca3af;
 }
 
 .chat-input::placeholder {
-  color: #9ca3af;
+  color: #94a3b8;
+  font-weight: 400;
 }
 
 .send-button {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 28px;
-  height: 28px;
-  background: #007bff;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease;
-  padding: 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .send-button:hover:not(:disabled) {
-  background: #0056b3;
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .send-button:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(-50%) scale(0.95);
 }
 
 .send-button:disabled {
-  background: #d1d5db;
+  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
   cursor: not-allowed;
-  transform: none;
+  transform: translateY(-50%);
+  box-shadow: none;
 }
 
-.send-icon {
-  width: 14px;
-  height: 14px;
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .input-container {
+    padding: 16px;
+  }
+  
+  .chat-input {
+    padding: 14px 55px 14px 16px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .send-button {
+    width: 36px;
+    height: 36px;
+    right: 6px;
+  }
 }
