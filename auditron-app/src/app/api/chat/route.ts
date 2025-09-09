@@ -638,8 +638,41 @@ class GeminiService {
 
   async initializeAgent() {
     try {
-      // Get tools from the MCP server (including audit tools)
-      const mcpTools = await this.mcpClient.getTools();
+      console.log("🔄 Initializing agent with MCP server...");
+      
+      // Get tools from the MCP server with timeout and retry
+      let mcpTools = [];
+      let retryCount = 0;
+      const maxRetries = 3;
+      const timeout = 10000; // 10 seconds timeout
+
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`🔗 Attempting to connect to MCP server (attempt ${retryCount + 1}/${maxRetries})...`);
+          
+          // Create a promise with timeout
+          const toolsPromise = this.mcpClient.getTools();
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('MCP connection timeout')), timeout)
+          );
+          
+          mcpTools = await Promise.race([toolsPromise, timeoutPromise]);
+          console.log(`✅ Successfully connected to MCP server. Found ${mcpTools.length} tools.`);
+          break;
+        } catch (error) {
+          retryCount++;
+          console.error(`❌ MCP connection attempt ${retryCount} failed:`, error);
+          
+          if (retryCount >= maxRetries) {
+            console.warn("⚠️ Max retries reached. Proceeding with custom tools only.");
+            mcpTools = []; // Use empty array if MCP fails
+            break;
+          }
+          
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
 
       // Add our custom document generation tools
       const customTools = [
@@ -648,8 +681,9 @@ class GeminiService {
         generateComplianceReportTool,
       ];
 
-      // Use all MCP tools (including audit tools from sequence.ai gateway)
+      // Use all available tools (MCP + custom)
       const allTools = [...mcpTools, ...customTools];
+      console.log(`🛠️ Total tools available: ${allTools.length} (${mcpTools.length} MCP + ${customTools.length} custom)`);
 
       // Create a LangGraph agent with all tools
       this.agent = createReactAgent({
@@ -657,11 +691,33 @@ class GeminiService {
         tools: allTools,
       });
 
-      console.log(
-        "LangChain agent initialized with MCP tools from sequence.ai gateway and custom document generation tools"
-      );
+      console.log("✅ LangChain agent initialized successfully");
+      
+      if (mcpTools.length === 0) {
+        console.warn("⚠️ Warning: No MCP tools available. Audit functions may be limited.");
+      }
     } catch (error) {
-      console.error("Failed to initialize LangChain agent:", error);
+      console.error("❌ Failed to initialize LangChain agent:", error);
+      
+      // Fallback: create agent with custom tools only
+      try {
+        console.log("🔄 Attempting fallback initialization with custom tools only...");
+        const customTools = [
+          generateSOCTool,
+          generateISOTool,
+          generateComplianceReportTool,
+        ];
+        
+        this.agent = createReactAgent({
+          llm: this.langchainModel,
+          tools: customTools,
+        });
+        
+        console.log("✅ Fallback agent initialized with custom tools only");
+      } catch (fallbackError) {
+        console.error("❌ Fallback initialization also failed:", fallbackError);
+        throw fallbackError;
+      }
     }
   }
 
