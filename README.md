@@ -34,6 +34,15 @@ For Smithery.ai use demo USER ID: `afdc9e23-4fbc-4741-b53a-70dbbf4a4f63`
 
 ---
 
+## Tech Stack
+- Frontend: Next.js, React, TypeScript
+- Backend: Python, FastAPI
+- AI & Agent: Google Gemini 1.5 Pro
+- Infrastructure: Cequence AI Gateway, Render, Vercel
+- Cloud SDKs: Boto3 (AWS), Azure SDK, GCP SDK
+
+
+
 ## 🔍 Overview
 
 Auditron is a next-generation AI-powered compliance and security audit platform that revolutionizes multi-cloud security assessments through intelligent automation. Built with the Model Context Protocol (MCP) and powered by Google Gemini AI, Auditron provides security professionals, auditors, and compliance teams with enterprise-grade tools for comprehensive security posture evaluation and professional compliance documentation generation.
@@ -74,88 +83,6 @@ Auditron transforms security auditing with cutting-edge technology:
 - 🔐 **Zero-Config Security**: User credentials managed transparently and securely with automatic retrieval
 - 🔗 **MCP Integration**: Extensible tool ecosystem through Model Context Protocol for unlimited scalability
 - 📥 **Instant Downloads**: Professional HTML reports with one-click download and preview capabilities
-
----
-
-## ✨ Core Features
-
-### 🤖 AI-Powered Audit Intelligence
-
-- **Conversational Interface**: Natural language chat for requesting audits, generating reports, and asking compliance questions
-- **Context-Aware AI**: Google Gemini 2.5 Flash maintains conversation history, user context, and audit state across sessions
-- **Intelligent Analysis**: AI understands complex compliance requirements, regulatory frameworks, and security best practices
-- **Auto-Parameter Passing**: User credentials automatically included in tool calls via user_id context - completely transparent to users
-- **Streaming Responses**: Real-time audit execution with live progress indicators, findings as they're discovered, and document generation status
-
-### 🛡️ Comprehensive Multi-Cloud Security
-
-**AWS Security Assessment (15+ Controls)**
-
-- **Identity & Access Management**: IAM console user MFA configuration, Root account MFA validation, Password policy compliance
-- **Storage & Data Security**: S3 bucket public access detection, EBS volume encryption validation, EFS encryption in transit, EBS snapshot public access
-- **Database Security**: RDS instance public accessibility, RDS storage encryption verification, DynamoDB point-in-time recovery
-- **Network Security**: Security group SSH restrictions, VPC flow logs configuration
-- **Logging & Monitoring**: CloudTrail logging configuration, AWS Config service enablement, GuardDuty threat detection
-- **Encryption & Key Management**: KMS key rotation automation, Secrets Manager rotation
-
-**Azure Security Assessment (8+ Controls)**
-
-- **Storage Security**: Storage account secure transfer, Storage container public access
-- **Database Security**: SQL database transparent data encryption, SQL server auditing configuration
-- **Network Security**: Network security group rules assessment, Virtual network configuration review
-- **Monitoring & Security**: Monitor log profile configuration, Security Center standard tier
-
-**GCP Security Assessment (1+ Controls)**
-
-- **Storage Security**: Cloud Storage bucket public access control
-- **Additional Controls**: Expanding coverage with compute, networking, and IAM controls
-
-### 📊 Professional Compliance Documentation ✨ NEW FEATURE
-
-**Document Types Available:**
-- **SOC 2 Type II Reports**: Comprehensive Service Organization Control assessments with detailed control testing
-- **ISO 27001 Compliance**: Information Security Management System documentation with gap analysis
-- **ISO 9001 Quality Management**: Quality management system compliance assessment and documentation
-- **Comprehensive Multi-Framework Reports**: Combined assessment across multiple compliance standards
-
-**Document Features:**
-- **Real Data Integration**: Uses actual audit findings from your cloud environments - never mock or template data
-- **Professional Formatting**: Clean, printable HTML documents with corporate styling and proper headings
-- **Instant Generation**: Documents created in real-time during conversation flow
-- **Download & Preview**: One-click download with in-browser preview capabilities
-- **File Metadata**: Automatic file size calculation and naming with timestamps
-- **Buffer-Based Delivery**: Documents returned in memory for immediate access without file system dependencies
-
-### 🔧 Advanced Technical Integration
-
-- **MCP Protocol**: Model Context Protocol for extensible AI tool integration with standardized interfaces
-- **Sequence.ai Gateway**: Professional MCP server deployment and management with enterprise reliability
-- **RESTful APIs**: Clean, documented API endpoints with OpenAPI specification and interactive documentation
-- **Streaming Architecture**: Real-time updates and progress tracking with WebSocket-like experience for audit execution
-- **Supabase Backend**: Modern database with built-in authentication, real-time features, and Row-Level Security
-- **User Credential Management**: Secure per-user credential storage with automatic retrieval and encryption at rest
-- **Document Generation Pipeline**: Advanced HTML generation with embedded styling and professional formatting
-
-### 🎨 Modern User Experience
-
-**Chat Interface:**
-- **ChatGPT-Style Design**: Modern message bubbles with role-based styling and clean typography
-- **Real-Time Streaming**: Live response generation with typing indicators and progressive content loading
-- **Document Detection**: Automatic detection of generated compliance documents with download interface
-- **Sample Questions**: Quick-start prompts for common audit scenarios and compliance requests
-- **Error Recovery**: Graceful error handling with retry mechanisms and user-friendly error messages
-
-**Document Management:**
-- **Download Integration**: Seamless document download directly from chat interface
-- **Preview Functionality**: In-browser document preview before download
-- **File Management**: Automatic file naming with timestamps and document type identification
-- **Progress Indicators**: Visual feedback during document generation and processing
-
-**Responsive Design:**
-- **Cross-Platform**: Works perfectly on desktop, tablet, and mobile devices
-- **Custom Styling**: Polished UI with custom scrollbars, loading animations, and smooth transitions
-- **Accessibility**: WCAG-compliant design with proper contrast and keyboard navigation
-- **Performance Optimized**: Fast loading with code splitting and optimized bundle sizes
 
 ---
 
