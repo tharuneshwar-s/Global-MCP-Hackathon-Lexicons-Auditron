@@ -19,6 +19,11 @@
 
 > **🏆 This project is a submission for Theme 2: Build a Secure MCP Server for Agents.**
 
+TEAM NAME: LEXICONS
+TEAM MEMBERS:
+- Tharuneshwar S
+- Saran Sakthi N
+
 | **Quick Links**                                                                                             |
 | :---------------------------------------------------------------------------------------------------------- |
 | 🎬 **[Watch the 5-Minute Demo Video](https://youtu.be/VfHX55bezo0)**                                   |
