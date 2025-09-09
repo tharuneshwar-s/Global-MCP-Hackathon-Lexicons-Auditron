@@ -21,7 +21,7 @@
 
 | **Quick Links**                                                                                             |
 | :---------------------------------------------------------------------------------------------------------- |
-| 🎬 **[Watch the 5-Minute Demo Video](https://your-youtube-link-here.com)**                                   |
+| 🎬 **[Watch the 5-Minute Demo Video](https://youtu.be/VfHX55bezo0)**                                   |
 | 🌐 **[Try the Live UI Frontend](https://auditron-soc.vercel.app/)**                                      |
 | 🛠️ **[View on Smithery (Required for Theme 2)](https://smithery.ai/server/@tharuneshwar-s/auditron-soc-mcp-server)**                        |
 
