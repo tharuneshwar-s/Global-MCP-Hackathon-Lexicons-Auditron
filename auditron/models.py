@@ -21,9 +21,7 @@ class GCPCredentials(BaseModel):
 
 class AuditRequest(BaseModel):
     controls: List[str] = Field(..., example=["AWS-S3-PUBLIC-ACCESS-V1"])
-    aws_credentials: Optional[AWSCredentials] = None
-    azure_credentials: Optional[AzureCredentials] = None
-    gcp_credentials: Optional[GCPCredentials] = None
+    user_id: str = Field(..., description="User ID for credential retrieval")
 
 
 class AuditResult(BaseModel):

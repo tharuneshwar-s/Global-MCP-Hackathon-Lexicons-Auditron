@@ -17,7 +17,7 @@ interface AzureCredentials {
 }
 
 interface GCPCredentials {
-  service_account_json: string; // Store the entire JSON as a string
+  service_account_json: any; // Store the parsed JSON object
 }
 
 interface Credentials {

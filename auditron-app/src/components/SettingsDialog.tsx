@@ -27,7 +27,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     subscription_id: ''
   });
   const [gcpForm, setGcpForm] = useState<GCPCredentials>({
-    service_account_json: ''
+    service_account_json: {}
   });
   const [gcpJsonInput, setGcpJsonInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -44,18 +44,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       }
       if (credentials.gcp_credentials) {
         setGcpForm(credentials.gcp_credentials);
-        setGcpJsonInput(credentials.gcp_credentials.service_account_json);
+        // Convert object back to JSON string for the textarea
+        setGcpJsonInput(JSON.stringify(credentials.gcp_credentials.service_account_json, null, 2));
       }
     }
   }, [isOpen, credentials]);
 
   const handleGcpJsonChange = (jsonString: string) => {
     setGcpJsonInput(jsonString);
-    // Update the form with the raw JSON string
-    setGcpForm({ service_account_json: jsonString });
+    // Try to parse the JSON and update the form
+    try {
+      if (jsonString.trim()) {
+        const parsed = JSON.parse(jsonString);
+        setGcpForm({ service_account_json: parsed });
+      } else {
+        setGcpForm({ service_account_json: {} });
+      }
+    } catch (error) {
+      // Keep the raw input but don't update the form if JSON is invalid
+      console.log('Invalid JSON, keeping raw input');
+    }
   };
 
   const handleSave = async () => {
+    console.log('handleSave called - starting save process');
     if (!user) {
       setSaveStatus('error');
       console.error('User not authenticated');
@@ -71,15 +83,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       let gcpCreds: GCPCredentials | null = null;
       
       // Validate and parse GCP credentials
-      if (gcpJsonInput.trim()) {
+      if (gcpJsonInput && gcpJsonInput.trim()) {
         try {
           // Validate that it's valid JSON and has required fields
           const parsed = JSON.parse(gcpJsonInput);
           if (!parsed.type || !parsed.project_id || !parsed.client_email) {
             throw new Error('Invalid GCP service account JSON - missing required fields');
           }
-          gcpCreds = { service_account_json: gcpJsonInput.trim() };
+          gcpCreds = { service_account_json: parsed };
         } catch (error) {
+          console.error('GCP JSON validation error:', error);
           setSaveStatus('error');
           setIsSaving(false);
           return;
@@ -171,7 +184,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                 <label htmlFor="aws-secret-key">Secret Access Key</label>
                 <input
                   id="aws-secret-key"
-                  type="password"
+                  type="text"
                   value={awsForm.secret_access_key}
                   onChange={(e) => setAwsForm({ ...awsForm, secret_access_key: e.target.value })}
                   placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
@@ -279,7 +292,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
             </button>
             <button 
               className="save-button" 
-              onClick={handleSave}
+              onClick={(e) => {
+                console.log('Save button clicked');
+                e.preventDefault();
+                handleSave();
+              }}
               disabled={isSaving}
             >
               {isSaving ? 'Saving...' : 'Save Credentials'}

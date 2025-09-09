@@ -4,7 +4,8 @@ uvicorn
 pydantic
 pydantic-settings
 python-dotenv
-fastapi_mcp 
+fastapi_mcp
+supabase
 
 # Cloud SDKs
 boto3

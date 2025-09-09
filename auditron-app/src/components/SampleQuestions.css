@@ -23,6 +23,27 @@
   margin: 0;
 }
 
+.credentials-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #e8f4f8;
+  border: 1px solid #3498db;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  margin-top: 1rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.credentials-note .icon {
+  font-size: 1.1rem;
+}
+
 .questions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));

@@ -7,7 +7,6 @@ import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
 import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 const MCP_URL = process.env.MCP_URL;
@@ -36,8 +35,7 @@ const ensureReportsDir = () => {
 // Check if user has credentials for cloud providers
 const checkUserCredentials = async () => {
   try {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -83,6 +81,81 @@ const saveReportFile = (content: string, filename: string): string => {
   fs.writeFileSync(filePath, content, "utf8");
   return `/reports/${filename}`;
 };
+
+// Custom audit tool that uses user_id instead of credentials
+const createAuditTool = (provider: string) => {
+  return tool(
+    async ({ controls }: { controls: string[] }) => {
+      try {
+        // Get authenticated user
+        const supabase = await createClient();
+
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+          return `⚠️ User not authenticated. Please log in to run audits.`;
+        }
+
+        // Check if user has credentials (optional check for user feedback)
+        const credentialsCheck = await checkUserCredentials();
+        if (!credentialsCheck.hasCredentials) {
+          return `⚠️ No credentials found for ${provider.toUpperCase()}. Please configure your ${provider.toUpperCase()} credentials in the settings before running audits.`;
+        }
+
+        // Prepare the audit request with user_id only
+        const auditRequest = {
+          controls: controls,
+          user_id: user.id,
+        };
+
+        // Make direct HTTP call to FastAPI backend
+        const response = await fetch(`${MCP_URL}/audit/${provider}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(auditRequest),
+        });
+
+        console.log(
+          `🔄 Sending audit request to ${provider.toUpperCase()} endpoint`,
+          auditRequest
+        );
+        console.log("Response: ", response);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const auditResults = await response.json();
+        return JSON.stringify(auditResults, null, 2);
+      } catch (error) {
+        console.error(`Error in ${provider} audit:`, error);
+        return `❌ Error running ${provider.toUpperCase()} audit: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`;
+      }
+    },
+    {
+      name: `${provider}_security_audit`,
+      description: `Run security audit controls for ${provider.toUpperCase()} using user's configured credentials. Returns detailed compliance findings.`,
+      schema: z.object({
+        controls: z
+          .array(z.string())
+          .describe(
+            `List of ${provider.toUpperCase()} control IDs to audit (e.g., ["${provider.toUpperCase()}-S3-PUBLIC-ACCESS-V1"])`
+          ),
+      }),
+    }
+  );
+};
+
+// Create audit tools for each provider
+const awsAuditTool = createAuditTool("aws");
+const azureAuditTool = createAuditTool("azure");
+const gcpAuditTool = createAuditTool("gcp");
 
 // PDF Generation Functions
 function generateSOCReportHTML(params: any): string {
@@ -535,249 +608,6 @@ const generateComplianceReportTool = tool(
   }
 );
 
-// AWS Security Audit Tool
-const awsSecurityAuditTool = tool(
-  async ({ region, accountId }) => {
-    try {
-      // Check if user has credentials
-      const credentialsCheck = await checkUserCredentials();
-
-      if (!credentialsCheck.hasCredentials) {
-        return {
-          success: false,
-          error:
-            "❌ Cloud provider credentials required. Please configure your AWS credentials in Settings before running security audits.",
-          provider: "AWS",
-          requiresCredentials: true,
-        };
-      }
-
-      // If credentials exist, you could potentially call the real auditron backend
-      // For now, we'll return the mock data but indicate credentials are configured
-      const auditResults = {
-        accountId: accountId || "135167709853",
-        region: region || "us-east-1",
-        scanDate: new Date().toISOString(),
-        totalChecks: 16,
-        passedChecks: 6,
-        failedChecks: 9,
-        criticalFailures: 1,
-        credentialsConfigured: true,
-        checks: [
-          {
-            checkId: "AWS-S3-PUBLIC-ACCESS-V1",
-            name: "S3 Bucket Public Access",
-            status: "FAILURE",
-            severity: "HIGH",
-            description:
-              "2 out of 5 S3 buckets were found to have public access enabled or misconfigured",
-            details: [
-              "auditron-public-bucket-tharun: One or more public access block settings are false",
-              "elasticbeanstalk-us-east-1-135167709853: One or more public access block settings are false",
-            ],
-            recommendation:
-              "Enable S3 bucket public access block settings and review bucket policies",
-          },
-          {
-            checkId: "AWS-EBS-ENCRYPTION-V1",
-            name: "EBS Volume Encryption",
-            status: "SUCCESS",
-            severity: "MEDIUM",
-            description: "No EBS volumes found in the us-east-1 region",
-            details: [],
-            recommendation:
-              "Ensure EBS encryption is enabled for any future volumes",
-          },
-          {
-            checkId: "AWS-EFS-ENCRYPTION-IN-TRANSIT-V1",
-            name: "EFS Encryption in Transit",
-            status: "SUCCESS",
-            severity: "MEDIUM",
-            description: "No EFS file systems found in the us-east-1 region",
-            details: [],
-            recommendation:
-              "Ensure EFS encryption in transit is enabled for any future file systems",
-          },
-          {
-            checkId: "AWS-RDS-PUBLIC-ACCESS-V1",
-            name: "RDS Public Access",
-            status: "FAILURE",
-            severity: "HIGH",
-            description: "1 out of 1 RDS instances is publicly accessible",
-            details: ["database-1-instance-1: Publicly accessible"],
-            recommendation:
-              "Disable public accessibility for RDS instances and use VPC security groups",
-          },
-          {
-            checkId: "AWS-RDS-STORAGE-ENCRYPTION-V1",
-            name: "RDS Storage Encryption",
-            status: "FAILURE",
-            severity: "HIGH",
-            description:
-              "1 out of 1 RDS instances has storage encryption disabled",
-            details: ["database-1-instance-1: Storage encryption disabled"],
-            recommendation: "Enable storage encryption for RDS instances",
-          },
-          {
-            checkId: "AWS-EBS-SNAPSHOT-PUBLIC-V1",
-            name: "EBS Snapshot Public Access",
-            status: "SUCCESS",
-            severity: "HIGH",
-            description: "No publicly shared EBS snapshots found",
-            details: [],
-            recommendation:
-              "Continue to ensure EBS snapshots are not publicly shared",
-          },
-          {
-            checkId: "AWS-DYNAMODB-PITR-V1",
-            name: "DynamoDB Point-in-Time Recovery",
-            status: "FAILURE",
-            severity: "MEDIUM",
-            description:
-              "1 out of 1 DynamoDB tables does not have Point-in-Time Recovery enabled",
-            details: ["auditron-test-table: PITR not enabled"],
-            recommendation: "Enable Point-in-Time Recovery for DynamoDB tables",
-          },
-          {
-            checkId: "AWS-IAM-MFA-CONSOLE-V1",
-            name: "IAM Console User MFA",
-            status: "SUCCESS",
-            severity: "HIGH",
-            description: "All IAM users with console access have MFA enabled",
-            details: [],
-            recommendation: "Continue to enforce MFA for all console users",
-          },
-          {
-            checkId: "AWS-IAM-ROOT-MFA-V1",
-            name: "Root Account MFA",
-            status: "SUCCESS",
-            severity: "CRITICAL",
-            description: "The root account has MFA enabled",
-            details: [],
-            recommendation:
-              "Continue to maintain MFA on root account and minimize root usage",
-          },
-          {
-            checkId: "AWS-VPC-SG-RESTRICTED-SSH-V1",
-            name: "Security Group SSH Restrictions",
-            status: "FAILURE",
-            severity: "HIGH",
-            description:
-              "1 out of 2 security groups allows unrestricted SSH access",
-            details: [
-              "sg-0ba405eb591f7b8cc (auditron-ssh-test-sg): Allows SSH from 0.0.0.0/0",
-            ],
-            recommendation:
-              "Restrict SSH access to specific IP ranges or use Session Manager",
-          },
-          {
-            checkId: "AWS-KMS-KEY-ROTATION-V1",
-            name: "KMS Key Rotation",
-            status: "FAILURE",
-            severity: "MEDIUM",
-            description:
-              "1 out of 1 KMS keys does not have automatic key rotation enabled",
-            details: ["Key rotation disabled"],
-            recommendation: "Enable automatic key rotation for KMS keys",
-          },
-          {
-            checkId: "AWS-CLOUDTRAIL-ENABLED-V1",
-            name: "CloudTrail Logging",
-            status: "CRITICAL FAILURE",
-            severity: "CRITICAL",
-            description: "No CloudTrail trails are configured in this account",
-            details: ["No trails found"],
-            recommendation:
-              "Enable CloudTrail with multi-region trail and log file validation",
-          },
-          {
-            checkId: "AWS-CONFIG-ENABLED-V1",
-            name: "AWS Config Service",
-            status: "FAILURE",
-            severity: "HIGH",
-            description: "AWS Config is not enabled in the us-east-1 region",
-            details: ["Config not enabled"],
-            recommendation:
-              "Enable AWS Config for configuration compliance monitoring",
-          },
-          {
-            checkId: "AWS-GUARDDUTY-ENABLED-V1",
-            name: "GuardDuty Threat Detection",
-            status: "FAILURE",
-            severity: "HIGH",
-            description: "GuardDuty is not enabled in the us-east-1 region",
-            details: ["GuardDuty not enabled"],
-            recommendation:
-              "Enable GuardDuty for threat detection and monitoring",
-          },
-          {
-            checkId: "AWS-SECRETSMANAGER-ROTATION-V1",
-            name: "Secrets Manager Rotation",
-            status: "SUCCESS",
-            severity: "MEDIUM",
-            description: "All secrets checked have rotation enabled",
-            details: [],
-            recommendation:
-              "Continue to maintain automatic rotation for secrets",
-          },
-        ],
-        summary: {
-          criticalIssues: [
-            "CloudTrail logging is not enabled - essential for audit trails and compliance",
-            "RDS instances are publicly accessible - immediate security risk",
-            "S3 buckets have public access enabled - potential data exposure",
-          ],
-          highPriorityActions: [
-            "Enable CloudTrail with multi-region coverage",
-            "Disable public access for RDS instances",
-            "Configure S3 bucket public access blocks",
-            "Enable AWS Config and GuardDuty",
-            "Restrict SSH access in security groups",
-          ],
-          complianceImpact:
-            "Current configuration poses significant risks for SOC 2, ISO 27001, and other compliance frameworks due to missing logging, monitoring, and access controls.",
-        },
-      };
-
-      return {
-        success: true,
-        provider: "AWS",
-        auditType: "Security Compliance Audit",
-        results: auditResults,
-        fileName: `AWS_Security_Audit_${auditResults.accountId}_${
-          new Date().toISOString().split("T")[0]
-        }.json`,
-        fileSize: `${Math.round(
-          JSON.stringify(auditResults).length / 1024
-        )} KB`,
-        message: `✅ AWS security audit completed for account ${
-          accountId || auditResults.accountId
-        } in region ${region || auditResults.region}`,
-        summary: `Found ${auditResults.criticalFailures} critical failures and ${auditResults.failedChecks} total failures out of ${auditResults.totalChecks} checks`,
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      return {
-        success: false,
-        error: `Failed to perform AWS audit: ${errorMessage}`,
-        provider: "AWS",
-      };
-    }
-  },
-  {
-    name: "aws_security_audit",
-    description:
-      "Perform a comprehensive AWS security audit checking for common misconfigurations and compliance issues",
-    schema: z.object({
-      region: z
-        .string()
-        .optional()
-        .describe("AWS region to audit (defaults to us-east-1)"),
-      accountId: z.string().optional().describe("AWS account ID (optional)"),
-    }),
-  }
-);
 
 class GeminiService {
   private mcpClient: any;
@@ -845,7 +675,7 @@ class GeminiService {
 
   async initializeAgent() {
     try {
-      // Get tools from the MCP server
+      // Get tools from the MCP server (for non-audit tools)
       const mcpTools = await this.mcpClient.getTools();
 
       // Add our custom document generation tools
@@ -855,8 +685,19 @@ class GeminiService {
         generateComplianceReportTool,
       ];
 
-      // Combine MCP tools with custom tools
-      const allTools = [...mcpTools, ...customTools];
+      // Add our custom audit tools with credential support
+      const auditTools = [awsAuditTool, azureAuditTool, gcpAuditTool];
+
+      // Combine all tools (prefer our custom audit tools over MCP ones)
+      const filteredMcpTools = mcpTools.filter(
+        (tool: any) =>
+          !tool.name.includes("audit") &&
+          !tool.name.includes("aws") &&
+          !tool.name.includes("azure") &&
+          !tool.name.includes("gcp")
+      );
+
+      const allTools = [...filteredMcpTools, ...customTools, ...auditTools];
 
       // Create a LangGraph agent with all tools
       this.agent = createReactAgent({
@@ -865,7 +706,7 @@ class GeminiService {
       });
 
       console.log(
-        "LangChain agent initialized with MCP and custom document generation tools"
+        "LangChain agent initialized with MCP, custom document generation, and credential-aware audit tools"
       );
     } catch (error) {
       console.error("Failed to initialize LangChain agent:", error);
@@ -892,11 +733,14 @@ Available tools:
 2. For ISO standards (27001, 9001, etc.): Use the generate_iso_document tool  
 3. For comprehensive multi-framework reports: Use the generate_compliance_report tool
 4. For AWS security audits: Use the aws_security_audit tool
+5. For Azure security audits: Use the azure_security_audit tool
+6. For GCP security audits: Use the gcp_security_audit tool
 
 CRITICAL INSTRUCTIONS:
 1. ONLY use real data from actual tool results. DO NOT use mock or sample data.
 2. Provide CONCISE responses with downloadable file links - do NOT stream long document content.
 3. When tools return document results, present them as clean summaries with download links.
+4. The audit tools automatically use the user's stored credentials - no need to prompt for credentials.
 
 RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Brief summary of what was generated
@@ -905,7 +749,7 @@ RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Next steps or recommendations
 
 WORKFLOW FOR COMPLIANCE REPORTS:
-1. When user asks for SOC 2 or compliance reports, FIRST run aws_security_audit to get real audit data
+1. When user asks for SOC 2 or compliance reports, FIRST run the appropriate security audit tool (aws_security_audit, azure_security_audit, or gcp_security_audit) to get real audit data
 2. Then use the real audit findings to generate SOC 2 or ISO reports with actual compliance status
 3. Present results as clean summaries with download links, NOT full document content
 
@@ -1048,11 +892,14 @@ Available tools:
 2. For ISO standards (27001, 9001, etc.): Use the generate_iso_document tool  
 3. For comprehensive multi-framework reports: Use the generate_compliance_report tool
 4. For AWS security audits: Use the aws_security_audit tool
+5. For Azure security audits: Use the azure_security_audit tool
+6. For GCP security audits: Use the gcp_security_audit tool
 
 CRITICAL INSTRUCTIONS:
 1. ONLY use real data from actual tool results. DO NOT use mock or sample data.
 2. Provide CONCISE responses with downloadable file links - do NOT include long document content.
 3. When tools return document results, present them as clean summaries with download links.
+4. The audit tools automatically use the user's stored credentials - no need to prompt for credentials.
 
 RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Brief summary of what was generated
@@ -1061,7 +908,7 @@ RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Next steps or recommendations
 
 WORKFLOW FOR COMPLIANCE REPORTS:
-1. When user asks for SOC 2 or compliance reports, FIRST run aws_security_audit to get real audit data
+1. When user asks for SOC 2 or compliance reports, FIRST run the appropriate security audit tool (aws_security_audit, azure_security_audit, or gcp_security_audit) to get real audit data
 2. Then use the real audit findings to generate SOC 2 or ISO reports with actual compliance status
 3. Present results as clean summaries with download links, NOT full document content
 

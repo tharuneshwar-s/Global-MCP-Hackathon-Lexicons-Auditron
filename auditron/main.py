@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 
 from controls import SUPPORTED_CONTROLS
 
-from services.audit_service import run_audit
+from services.audit_service_new import run_audit
 
 # Import pydantic models
-from models import AuditRequest, AuditResult, AuditResponse, ToolInfo, ToolsResponse, AWSCredentials, AzureCredentials, GCPCredentials
+from models import AuditRequest, AuditResult, AuditResponse, ToolInfo, ToolsResponse
 
 # Load environment variables from .env file
 load_dotenv()
@@ -75,28 +75,19 @@ async def list_tools():
 @app.post("/audit/aws", response_model=AuditResponse, tags=["Auditing"])
 async def audit_aws(request: AuditRequest):
     """Executes a list of specified audit controls for Amazon Web Services."""
-    return await run_audit("aws", request.controls, 
-                          aws_credentials=request.aws_credentials,
-                          azure_credentials=request.azure_credentials,
-                          gcp_credentials=request.gcp_credentials)
+    return await run_audit("aws", request.controls, request.user_id)
 
 
 @app.post("/audit/azure", response_model=AuditResponse, tags=["Auditing"])
 async def audit_azure(request: AuditRequest):
     """Executes a list of specified audit controls for Microsoft Azure."""
-    return await run_audit("azure", request.controls,
-                          aws_credentials=request.aws_credentials,
-                          azure_credentials=request.azure_credentials,
-                          gcp_credentials=request.gcp_credentials)
+    return await run_audit("azure", request.controls, request.user_id)
 
 
 @app.post("/audit/gcp", response_model=AuditResponse, tags=["Auditing"])
 async def audit_gcp(request: AuditRequest):
     """Executes a list of specified audit controls for Google Cloud Platform."""
-    return await run_audit("gcp", request.controls,
-                          aws_credentials=request.aws_credentials,
-                          azure_credentials=request.azure_credentials,
-                          gcp_credentials=request.gcp_credentials)
+    return await run_audit("gcp", request.controls, request.user_id)
 
 
 

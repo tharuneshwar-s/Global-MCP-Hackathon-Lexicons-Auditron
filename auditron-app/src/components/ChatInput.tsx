@@ -44,7 +44,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         <button
           onClick={handleSubmit}
           disabled={isLoading || !input.trim()}
-          className="!w-5 !h-10 !p-0 absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white border-none rounded-full cursor-pointer flex items-center justify-center transition-all duration-300 ease-in-out shadow-[0_2px_8px_rgba(102,126,234,0.3)]"
+          className="!w-5 !h-10  !p-0 absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white border-none rounded-full cursor-pointer flex items-center justify-center transition-all duration-300 ease-in-out shadow-[0_2px_8px_rgba(102,126,234,0.3)]"
           title="Send message"
           aria-label="Send message"
         >
