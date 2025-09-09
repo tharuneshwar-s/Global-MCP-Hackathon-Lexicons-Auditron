@@ -74,7 +74,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, c
     return (
         <div className="messages sizer h-[75vh]">
             {/* Debug info in development */}
-            {process.env.NODE_ENV === 'development' && (
+            {/* {process.env.NODE_ENV === 'development' && (
                 <div className="debug-panel">
                     <p><strong>Debug Info:</strong></p>
                     <p>Document Data: {documentData ? '✅ Available' : '❌ None'}</p>
@@ -84,7 +84,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, c
                         Test Document UI
                     </button>
                 </div>
-            )}
+            )} */}
 
             {messages.map((msg, i) => (
                 <div key={i} className={`message ${msg.role}`}>
