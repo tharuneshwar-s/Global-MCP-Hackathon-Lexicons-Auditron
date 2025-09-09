@@ -168,7 +168,7 @@ export const useChat = () => {
                 accumulatedContent.includes('Comprehensive_Compliance_Report_') ||
                 accumulatedContent.includes('📄 Report Details:')) {
               
-              console.log('🔍 Document generation detected, fetching document data...');
+              // console.log('🔍 Document generation detected, fetching document data...');
               
               try {
                 // Add a small delay to ensure backend has processed the document
@@ -178,12 +178,12 @@ export const useChat = () => {
                 const docResponse = await fetch('/api/chat?action=document');
                 if (docResponse.ok) {
                   const docResult = await docResponse.json();
-                  console.log('📄 Document fetch result:', docResult);
+                  // console.log('📄 Document fetch result:', docResult);
                   if (docResult.documentData) {
                     setDocumentData(docResult.documentData);
-                    console.log('✅ Document data set:', docResult.documentData.fileName);
+                    // console.log('✅ Document data set:', docResult.documentData.fileName);
                   } else {
-                    console.log('❌ No document data in response');
+                    // console.log('❌ No document data in response');
                   }
                 } else {
                   console.error('❌ Failed to fetch document data:', docResponse.status);

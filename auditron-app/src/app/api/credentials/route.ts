@@ -28,10 +28,10 @@ export async function GET(request: NextRequest) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    console.log('GET Auth check:', { user: user?.id, authError });
+    // console.log('GET Auth check:', { user: user?.id, authError });
 
     if (authError || !user) {
-      console.log('GET Authentication failed:', { authError, user });
+      // console.log('GET Authentication failed:', { authError, user });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    console.log('Auth check:', { user: user?.id, authError });
+    // console.log('Auth check:', { user: user?.id, authError });
 
     if (authError || !user) {
-      console.log('Authentication failed:', { authError, user });
+      // console.log('Authentication failed:', { authError, user });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    console.log("Existing credentials:", existingCredentials);
+    // console.log("Existing credentials:", existingCredentials);
 
     let result;
     if (existingCredentials) {

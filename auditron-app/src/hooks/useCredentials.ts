@@ -48,13 +48,13 @@ export const useCredentials = () => {
     fetchingRef.current = true;
     lastFetchedUserIdRef.current = user.id;
     setIsLoading(true);
-    console.log('Fetching credentials for user:', user?.id);
+    // console.log('Fetching credentials for user:', user?.id);
     try {
       const response = await fetch('/api/credentials');
-      console.log('Credentials API response status:', response.status);
+      // console.log('Credentials API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
-        console.log('Credentials data:', data);
+        // console.log('Credentials data:', data);
         setCredentials(data.credentials);
         
         // Check if user has at least one set of credentials
@@ -96,7 +96,7 @@ export const useCredentials = () => {
     return new Promise<boolean>((resolve) => {
       saveTimeoutRef.current = setTimeout(async () => {
         setIsSaving(true);
-        console.log('Saving credentials for user:', user?.id);
+        // console.log('Saving credentials for user:', user?.id);
         try {
           const payload: any = {};
           
@@ -104,7 +104,7 @@ export const useCredentials = () => {
           if (azureCredentials !== undefined) payload.azure_credentials = azureCredentials;
           if (gcpCredentials !== undefined) payload.gcp_credentials = gcpCredentials?.service_account_json ? JSON.parse(gcpCredentials?.service_account_json) : null;
 
-          console.log('Save payload:', payload);
+          // console.log('Save payload:', payload);
 
           const response = await fetch('/api/credentials', {
             method: 'POST',
@@ -114,11 +114,11 @@ export const useCredentials = () => {
             body: JSON.stringify(payload),
           });
 
-          console.log('Save response status:', response.status);
+          // console.log('Save response status:', response.status);
 
           if (response.ok) {
             const data = await response.json();
-            console.log('Save response data:', data);
+            // console.log('Save response data:', data);
             setCredentials(data.credentials);
             
             // Update hasCredentials flag

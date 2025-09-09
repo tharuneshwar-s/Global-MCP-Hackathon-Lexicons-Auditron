@@ -47,7 +47,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, c
     // Debug logging
     React.useEffect(() => {
         if (documentData) {
-            console.log('📄 MessageList received document data:', documentData);
+            // console.log('📄 MessageList received document data:', documentData);
         }
     }, [documentData]);
 
@@ -68,7 +68,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, c
             fileSize: '1 KB',
             documentType: 'SOC'
         };
-        console.log('🧪 Testing document downloader with:', testData);
+        // console.log('🧪 Testing document downloader with:', testData);
     };
 
     return (

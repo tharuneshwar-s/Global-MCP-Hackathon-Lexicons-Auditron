@@ -62,12 +62,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       }
     } catch (error) {
       // Keep the raw input but don't update the form if JSON is invalid
-      console.log('Invalid JSON, keeping raw input');
+      // console.log('Invalid JSON, keeping raw input');
     }
   };
 
   const handleSave = async () => {
-    console.log('handleSave called - starting save process');
+    // console.log('handleSave called - starting save process');
     if (!user) {
       setSaveStatus('error');
       console.error('User not authenticated');
@@ -77,7 +77,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
     setIsSaving(true);
     setSaveStatus(null);
-    console.log('Saving credentials for user:', user.id);
+    // console.log('Saving credentials for user:', user.id);
 
     try {
       let gcpCreds: GCPCredentials | null = null;
@@ -293,7 +293,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
             <button 
               className="save-button" 
               onClick={(e) => {
-                console.log('Save button clicked');
+                // console.log('Save button clicked');
                 e.preventDefault();
                 handleSave();
               }}

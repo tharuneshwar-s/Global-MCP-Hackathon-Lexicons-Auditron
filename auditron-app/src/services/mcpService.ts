@@ -19,7 +19,7 @@ class MCPService {
 
   private async doInitialize(): Promise<void> {
     try {
-      console.log("🚀 Initializing MCP client with remote transport...");
+      // console.log("🚀 Initializing MCP client with remote transport...");
 
       // Create SSE transport for the remote MCP server
       //   this.transport = new SSEClientTransport(
@@ -53,7 +53,7 @@ class MCPService {
       await this.client.connect(this.transport!);
 
       this.isInitialized = true;
-      console.log("✅ MCP client connected successfully");
+      // console.log("✅ MCP client connected successfully");
     } catch (error) {
       console.error("❌ MCP initialization failed:", error);
 
@@ -74,10 +74,10 @@ class MCPService {
     try {
       await this.ensureConnected();
 
-      console.log("🔄 Listing MCP tools...");
+      // console.log("🔄 Listing MCP tools...");
       const response = await this.client!.listTools();
 
-      console.log("✅ MCP tools response:", response);
+      // console.log("✅ MCP tools response:", response);
 
       // Transform MCP tools response to match our ToolsResponse interface
       const tools = response.tools || [];
@@ -154,13 +154,13 @@ class MCPService {
   private async callTool(toolName: string, arguments_: any): Promise<any> {
     await this.ensureConnected();
 
-    console.log(`🔄 Calling MCP tool: ${toolName}`, arguments_);
+    // console.log(`🔄 Calling MCP tool: ${toolName}`, arguments_);
     const response = await this.client!.callTool({
       name: toolName,
       arguments: arguments_,
     });
 
-    console.log(`✅ Tool response for ${toolName}:`, response);
+    // console.log(`✅ Tool response for ${toolName}:`, response);
     return response;
   }
 

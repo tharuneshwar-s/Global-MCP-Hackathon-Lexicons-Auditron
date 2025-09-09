@@ -638,7 +638,7 @@ class GeminiService {
 
   async initializeAgent() {
     try {
-      console.log("🔄 Initializing agent with MCP server...");
+      // console.log("🔄 Initializing agent with MCP server...");
       
       // Get tools from the MCP server with timeout and retry
       let mcpTools = [];
@@ -648,7 +648,7 @@ class GeminiService {
 
       while (retryCount < maxRetries) {
         try {
-          console.log(`🔗 Attempting to connect to MCP server (attempt ${retryCount + 1}/${maxRetries})...`);
+          // console.log(`🔗 Attempting to connect to MCP server (attempt ${retryCount + 1}/${maxRetries})...`);
           
           // Create a promise with timeout
           const toolsPromise = this.mcpClient.getTools();
@@ -657,7 +657,7 @@ class GeminiService {
           );
           
           mcpTools = await Promise.race([toolsPromise, timeoutPromise]);
-          console.log(`✅ Successfully connected to MCP server. Found ${mcpTools.length} tools.`);
+          // console.log(`✅ Successfully connected to MCP server. Found ${mcpTools.length} tools.`);
           break;
         } catch (error) {
           retryCount++;
@@ -683,7 +683,7 @@ class GeminiService {
 
       // Use all available tools (MCP + custom)
       const allTools = [...mcpTools, ...customTools];
-      console.log(`🛠️ Total tools available: ${allTools.length} (${mcpTools.length} MCP + ${customTools.length} custom)`);
+      // console.log(`🛠️ Total tools available: ${allTools.length} (${mcpTools.length} MCP + ${customTools.length} custom)`);
 
       // Create a LangGraph agent with all tools
       this.agent = createReactAgent({
@@ -691,7 +691,7 @@ class GeminiService {
         tools: allTools,
       });
 
-      console.log("✅ LangChain agent initialized successfully");
+      // console.log("✅ LangChain agent initialized successfully");
       
       if (mcpTools.length === 0) {
         console.warn("⚠️ Warning: No MCP tools available. Audit functions may be limited.");
@@ -701,7 +701,7 @@ class GeminiService {
       
       // Fallback: create agent with custom tools only
       try {
-        console.log("🔄 Attempting fallback initialization with custom tools only...");
+        // console.log("🔄 Attempting fallback initialization with custom tools only...");
         const customTools = [
           generateSOCTool,
           generateISOTool,
@@ -713,7 +713,7 @@ class GeminiService {
           tools: customTools,
         });
         
-        console.log("✅ Fallback agent initialized with custom tools only");
+        // console.log("✅ Fallback agent initialized with custom tools only");
       } catch (fallbackError) {
         console.error("❌ Fallback initialization also failed:", fallbackError);
         throw fallbackError;
@@ -810,8 +810,8 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
         messages: messageHistory,
       };
 
-      console.log("Sending message to agent:", message);
-      console.log("User ID for tool calls:", userId);
+      // console.log("Sending message to agent:", message);
+      // console.log("User ID for tool calls:", userId);
 
       try {
         // Use streaming with LangGraph agent
@@ -826,20 +826,20 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
         for await (const chunk of stream) {
           // Handle the chunk array structure - chunk is an array with message and metadata
           if (Array.isArray(chunk) && chunk.length > 0) {
-            // console.log("\n\nStream chunk: ", chunk[0]);
+            // // console.log("\n\nStream chunk: ", chunk[0]);
 
-            // console.log("\n\n\tAIMessageChunk: ", chunk[0], typeof chunk[0]);
+            // // console.log("\n\n\tAIMessageChunk: ", chunk[0], typeof chunk[0]);
 
-            console.log("\n\n**************************====");
+            // console.log("\n\n**************************====");
 
-            console.log("id: ", chunk[0]?.id);
-            console.log("content: ", chunk[0]?.content);
-            console.log("additional_kwargs: ", chunk[0]?.name);
-            console.log("tool_calls: ", chunk[0]?.tool_calls);
-            console.log("tool_responses: ", chunk[0]?.tool_responses);
-            console.log("type: ", chunk[0]?.type);
+            // console.log("id: ", chunk[0]?.id);
+            // console.log("content: ", chunk[0]?.content);
+            // console.log("additional_kwargs: ", chunk[0]?.name);
+            // console.log("tool_calls: ", chunk[0]?.tool_calls);
+            // console.log("tool_responses: ", chunk[0]?.tool_responses);
+            // console.log("type: ", chunk[0]?.type);
 
-            console.log("**************************====\n\n");
+            // console.log("**************************====\n\n");
 
             const message = chunk[0]; // First element is usually the message
 
@@ -856,7 +856,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
                         fileSize: responseData.fileSize || 'Unknown size',
                         documentType: responseData.documentType
                       };
-                      console.log('📄 Captured document data:', capturedDocumentData.fileName);
+                      // console.log('📄 Captured document data:', capturedDocumentData.fileName);
                     }
                   } catch (e) {
                     // Not JSON or not document data, continue
@@ -876,7 +876,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
                     fileSize: responseData.fileSize || 'Unknown size',
                     documentType: responseData.documentType
                   };
-                  console.log('📄 Captured document data from content:', capturedDocumentData.fileName);
+                  // console.log('📄 Captured document data from content:', capturedDocumentData.fileName);
                 }
               } catch (e) {
                 // Not JSON, continue with normal processing
@@ -905,7 +905,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
                       fileSize: responseData.fileSize || 'Unknown size',
                       documentType: responseData.documentType
                     };
-                    console.log('📄 Captured document data from tool:', capturedDocumentData.fileName);
+                    // console.log('📄 Captured document data from tool:', capturedDocumentData.fileName);
                   }
                 } catch (e) {
                   console.error('Failed to parse tool response as JSON:', e);
@@ -943,9 +943,9 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
         // Store captured document data
         if (capturedDocumentData) {
           this.setDocumentData(capturedDocumentData);
-          console.log('🎉 Document data stored successfully:', capturedDocumentData.fileName);
+          // console.log('🎉 Document data stored successfully:', capturedDocumentData.fileName);
         } else {
-          console.log('❌ No document data captured in this stream');
+          // console.log('❌ No document data captured in this stream');
         }
 
         // Add assistant response to history
@@ -1105,11 +1105,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Received message:", message);
-    console.log(
-      "Current conversation history length:",
-      geminiService.getHistoryLength()
-    );
+    // console.log("Received message:", message);
+    // console.log(
+    //   "Current conversation history length:",
+    //   geminiService.getHistoryLength()
+    // );
 
     // Handle streaming requests
     if (stream) {
