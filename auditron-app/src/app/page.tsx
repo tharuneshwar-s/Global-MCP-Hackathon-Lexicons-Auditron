@@ -11,7 +11,7 @@ import '../components/App.css';
 
 // Wrapper component to handle Suspense boundary for useSearchParams
 function HomeContent() {
-  const { messages, isLoading, currentStatus, streamingMessage, sendMessage, resetChat } = useChat();
+  const { messages, isLoading, currentStatus, streamingMessage, sendMessage, resetChat, documentData } = useChat();
   const { user, loading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -44,6 +44,7 @@ function HomeContent() {
           isLoading={isLoading}
           currentStatus={currentStatus}
           streamingMessage={streamingMessage}
+          documentData={documentData}
         />
       )}
 

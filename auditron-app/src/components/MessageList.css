@@ -323,3 +323,26 @@ body {
   margin-right: 8px;
   font-size: 16px;
 }
+
+/* Debug panel styles */
+.debug-panel {
+  padding: 10px;
+  background: #f0f0f0;
+  margin: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.debug-button {
+  padding: 5px 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+.debug-button:hover {
+  background: #0056b3;
+}

@@ -8,8 +8,16 @@ interface StreamChunk {
   content: string;
 }
 
+interface DocumentData {
+  content: string;
+  fileName: string;
+  fileSize: string;
+  documentType: string;
+}
+
 class GeminiService {
   private history: ChatMessage[] = [];
+  private lastDocumentData: DocumentData | null = null;
 
   async sendMessage(message: string): Promise<string> {
     try {
@@ -88,9 +96,18 @@ class GeminiService {
       await fetch('/api/chat', {
         method: 'PUT',
       });
+      this.lastDocumentData = null; // Clear document data on reset
     } catch (error) {
       console.error('Error resetting chat:', error);
     }
+  }
+
+  getLastDocumentData(): DocumentData | null {
+    return this.lastDocumentData;
+  }
+
+  setDocumentData(data: DocumentData): void {
+    this.lastDocumentData = data;
   }
 }
 

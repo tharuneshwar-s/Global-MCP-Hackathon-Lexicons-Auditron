@@ -4,8 +4,6 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import * as fs from "fs";
-import * as path from "path";
 import { createClient } from "@/utils/supabase/server";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
@@ -22,15 +20,6 @@ if (!MCP_URL) {
     "MCP_URL environment variable is not set. Please add it to your .env file."
   );
 }
-
-// Ensure public/reports directory exists
-const ensureReportsDir = () => {
-  const reportsDir = path.join(process.cwd(), "public", "reports");
-  if (!fs.existsSync(reportsDir)) {
-    fs.mkdirSync(reportsDir, { recursive: true });
-  }
-  return reportsDir;
-};
 
 // Check if user has credentials for cloud providers
 const checkUserCredentials = async () => {
@@ -72,14 +61,6 @@ const checkUserCredentials = async () => {
     console.error("Error checking credentials:", error);
     return { hasCredentials: false, error: "Internal error" };
   }
-};
-
-// Save HTML file and return download URL
-const saveReportFile = (content: string, filename: string): string => {
-  const reportsDir = ensureReportsDir();
-  const filePath = path.join(reportsDir, filename);
-  fs.writeFileSync(filePath, content, "utf8");
-  return `/reports/${filename}`;
 };
 
 // Helper function to get current user ID for inclusion in prompts
@@ -309,23 +290,26 @@ const generateSOCTool = tool(
         controls: transformedControls,
       });
 
-      // Generate filename and save file
+      // Generate filename for reference (but don't save file)
       const filename = `SOC2_Report_${organizationName.replace(/\s+/g, "_")}_${
         new Date().toISOString().split("T")[0]
       }.html`;
-      const downloadUrl =
-        `${process.env.NEXT_PUBLIC_URL || "http://localhost:3001"}` +
-        saveReportFile(htmlContent, filename);
 
       return {
         success: true,
         documentType: "SOC",
         content: htmlContent,
-        downloadUrl: downloadUrl,
         fileName: filename,
         fileSize: `${Math.round(htmlContent.length / 1024)} KB`,
         message: `✅ SOC 2 compliance document generated successfully for ${organizationName}`,
         summary: `Generated SOC 2 Type II report with ${findings.length} control assessments`,
+        reportData: {
+          organizationName,
+          auditPeriod,
+          controlsAssessed: findings.length,
+          complianceStatus: transformedControls.filter(c => c.status === 'compliant').length,
+          nonCompliantControls: transformedControls.filter(c => c.status === 'non-compliant').length
+        }
       };
     } catch (error) {
       const errorMessage =
@@ -340,7 +324,7 @@ const generateSOCTool = tool(
   {
     name: "generate_soc_document",
     description:
-      "Generate a SOC 2 Type II compliance document in HTML format using REAL audit findings. Must be called AFTER aws_security_audit to use actual compliance data, not sample data.",
+      "Generate a SOC 2 Type II compliance document in HTML format using REAL audit findings. Returns the complete HTML content in the response buffer instead of saving to file. Must be called AFTER aws_security_audit to use actual compliance data, not sample data.",
     schema: z.object({
       organizationName: z
         .string()
@@ -402,26 +386,30 @@ const generateISOTool = tool(
         requirements: transformedRequirements,
       });
 
-      // Generate filename and save file
+      // Generate filename for reference (but don't save file)
       const filename = `ISO_${standard.replace(
         /\s+/g,
         "_"
       )}_Report_${organizationName.replace(/\s+/g, "_")}_${
         new Date().toISOString().split("T")[0]
       }.html`;
-      const downloadUrl =
-        `${process.env.NEXT_PUBLIC_URL || "http://localhost:3001"}` +
-        saveReportFile(htmlContent, filename);
 
       return {
         success: true,
         documentType: "ISO",
         content: htmlContent,
-        downloadUrl: downloadUrl,
         fileName: filename,
         fileSize: `${Math.round(htmlContent.length / 1024)} KB`,
         message: `✅ ${standard} compliance document generated successfully for ${organizationName}`,
         summary: `Generated ${standard} assessment with ${compliance.length} requirement evaluations`,
+        reportData: {
+          organizationName,
+          standard,
+          auditPeriod,
+          requirementsAssessed: compliance.length,
+          compliantRequirements: transformedRequirements.filter(r => r.status === 'compliant').length,
+          nonCompliantRequirements: transformedRequirements.filter(r => r.status === 'non-compliant').length
+        }
       };
     } catch (error) {
       const errorMessage =
@@ -436,7 +424,7 @@ const generateISOTool = tool(
   {
     name: "generate_iso_document",
     description:
-      "Generate an ISO compliance document (ISO 27001, ISO 9001, etc.) in HTML format using REAL audit data. Must be called AFTER aws_security_audit to use actual compliance status.",
+      "Generate an ISO compliance document (ISO 27001, ISO 9001, etc.) in HTML format using REAL audit data. Returns the complete HTML content in the response buffer instead of saving to file. Must be called AFTER aws_security_audit to use actual compliance status.",
     schema: z.object({
       organizationName: z
         .string()
@@ -489,26 +477,32 @@ const generateComplianceReportTool = tool(
         findings: transformedFindings,
       });
 
-      // Generate filename and save file
+      // Generate filename for reference (but don't save file)
       const filename = `Comprehensive_Compliance_Report_${organizationName.replace(
         /\s+/g,
         "_"
       )}_${new Date().toISOString().split("T")[0]}.html`;
-      const downloadUrl =
-        `${process.env.NEXT_PUBLIC_URL || "http://localhost:3001"}` +
-        saveReportFile(htmlContent, filename);
 
       return {
         success: true,
         documentType: "COMPREHENSIVE",
         content: htmlContent,
-        downloadUrl: downloadUrl,
         fileName: filename,
         fileSize: `${Math.round(htmlContent.length / 1024)} KB`,
         message: `✅ Comprehensive compliance report generated successfully for ${organizationName}`,
         summary: `Generated multi-framework report covering ${frameworks.join(
           ", "
         )} with ${recommendations.length} findings`,
+        reportData: {
+          organizationName,
+          frameworks,
+          assessmentDate: new Date().toLocaleDateString(),
+          totalFindings: recommendations.length,
+          highPriorityFindings: recommendations.filter(r => r.priority === 'high').length,
+          mediumPriorityFindings: recommendations.filter(r => r.priority === 'medium').length,
+          lowPriorityFindings: recommendations.filter(r => r.priority === 'low').length,
+          auditSummary: auditData
+        }
       };
     } catch (error) {
       const errorMessage =
@@ -523,7 +517,7 @@ const generateComplianceReportTool = tool(
   {
     name: "generate_compliance_report",
     description:
-      "Generate a comprehensive compliance report covering multiple frameworks using REAL audit data. Must be called AFTER aws_security_audit to use actual findings.",
+      "Generate a comprehensive compliance report covering multiple frameworks using REAL audit data. Returns the complete HTML content in the response buffer instead of saving to file. Must be called AFTER aws_security_audit to use actual findings.",
     schema: z.object({
       organizationName: z.string().describe("Name of the organization"),
       frameworks: z
@@ -562,6 +556,12 @@ class GeminiService {
     role: "user" | "assistant" | "system";
     content: string;
   }> = [];
+  private lastDocumentData: {
+    content: string;
+    fileName: string;
+    fileSize: string;
+    documentType: string;
+  } | null = null;
 
   constructor() {
     this.langchainModel = new ChatGoogleGenerativeAI({
@@ -616,6 +616,24 @@ class GeminiService {
 
   private clearHistory(): void {
     this.conversationHistory = [];
+  }
+
+  // Methods to manage document data
+  getLastDocumentData() {
+    return this.lastDocumentData;
+  }
+
+  setDocumentData(data: {
+    content: string;
+    fileName: string;
+    fileSize: string;
+    documentType: string;
+  }) {
+    this.lastDocumentData = data;
+  }
+
+  clearDocumentData() {
+    this.lastDocumentData = null;
   }
 
   async initializeAgent() {
@@ -687,20 +705,22 @@ Available tools:
 CRITICAL INSTRUCTIONS:
 1. ALWAYS pass user_id: "${userId}" when calling audit tools
 2. ONLY use real data from actual tool results. DO NOT use mock or sample data.
-3. Provide CONCISE responses with downloadable file links - do NOT stream long document content.
-4. When tools return document results, present them as clean summaries with download links.
+3. Provide CONCISE responses with report summaries - do NOT stream long document content.
+4. When document generation tools return HTML content, present them as clean summaries with key findings.
 5. The audit tools will automatically use the user's stored credentials based on the user_id.
+6. Document generation tools return HTML content in the response buffer - present key metrics and findings instead of raw HTML.
 
 RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Brief summary of what was generated
 - Key findings/metrics (e.g., "Found X non-compliant controls")
-- Clear download link with file name and size
+- Report metadata (file name, size, organization details)
 - Next steps or recommendations
+- DO NOT include the full HTML content in the response
 
 WORKFLOW FOR COMPLIANCE REPORTS:
 1. When user asks for SOC 2 or compliance reports, FIRST run the appropriate security audit tool (aws_security_audit, azure_security_audit, or gcp_security_audit) to get real audit data
 2. Then use the real audit findings to generate SOC 2 or ISO reports with actual compliance status
-3. Present results as clean summaries with download links, NOT full document content
+3. Present results as clean summaries with key findings, NOT full document content
 
 EXAMPLE GOOD RESPONSE:
 "✅ SOC 2 Report Generated Successfully
@@ -716,9 +736,9 @@ EXAMPLE GOOD RESPONSE:
 - RDS instances publicly accessible (High Risk)
 - S3 buckets with public access (High Risk)
 
-**📁 Download Report:**
+**� Report Details:**
 File: SOC2_Report_Company_2024-09-08.html (45 KB)
-[Download Link]
+Content: Complete HTML report with detailed findings and evidence
 
 **Next Steps:** Priority remediation of critical logging and access controls required for compliance."
 
@@ -745,6 +765,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
 
         let isToolCalling = false;
         let assistantResponse = "";
+        let capturedDocumentData: any = null;
 
         for await (const chunk of stream) {
           // Handle the chunk array structure - chunk is an array with message and metadata
@@ -766,6 +787,46 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
 
             const message = chunk[0]; // First element is usually the message
 
+            // Check for tool responses that might contain document data
+            if (message && message.tool_responses && Array.isArray(message.tool_responses)) {
+              for (const toolResponse of message.tool_responses) {
+                if (toolResponse.content && typeof toolResponse.content === 'string') {
+                  try {
+                    const responseData = JSON.parse(toolResponse.content);
+                    if (responseData.content && responseData.fileName && responseData.documentType) {
+                      capturedDocumentData = {
+                        content: responseData.content,
+                        fileName: responseData.fileName,
+                        fileSize: responseData.fileSize || 'Unknown size',
+                        documentType: responseData.documentType
+                      };
+                      console.log('📄 Captured document data:', capturedDocumentData.fileName);
+                    }
+                  } catch (e) {
+                    // Not JSON or not document data, continue
+                  }
+                }
+              }
+            }
+
+            // Also check if the content itself is a tool response with document data
+            if (message && message.content && typeof message.content === 'string') {
+              try {
+                const responseData = JSON.parse(message.content);
+                if (responseData.success && responseData.content && responseData.fileName && responseData.documentType) {
+                  capturedDocumentData = {
+                    content: responseData.content,
+                    fileName: responseData.fileName,
+                    fileSize: responseData.fileSize || 'Unknown size',
+                    documentType: responseData.documentType
+                  };
+                  console.log('📄 Captured document data from content:', capturedDocumentData.fileName);
+                }
+              } catch (e) {
+                // Not JSON, continue with normal processing
+              }
+            }
+
             if (
               message &&
               message.name &&
@@ -773,6 +834,28 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
               typeof message.content === "string"
             ) {
               const toolName = message.name;
+              
+              // Check if this is a document generation tool
+              if (toolName && (toolName.includes('generate_soc_document') || 
+                              toolName.includes('generate_iso_document') || 
+                              toolName.includes('generate_compliance_report'))) {
+                
+                try {
+                  const responseData = JSON.parse(message.content);
+                  if (responseData.success && responseData.content && responseData.fileName && responseData.documentType) {
+                    capturedDocumentData = {
+                      content: responseData.content,
+                      fileName: responseData.fileName,
+                      fileSize: responseData.fileSize || 'Unknown size',
+                      documentType: responseData.documentType
+                    };
+                    console.log('📄 Captured document data from tool:', capturedDocumentData.fileName);
+                  }
+                } catch (e) {
+                  console.error('Failed to parse tool response as JSON:', e);
+                }
+              }
+              
               yield {
                 type: "status",
                 content: `📊 Processing ${toolName} results...`,
@@ -799,6 +882,14 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
               yield { type: "content", content: content };
             }
           }
+        }
+
+        // Store captured document data
+        if (capturedDocumentData) {
+          this.setDocumentData(capturedDocumentData);
+          console.log('🎉 Document data stored successfully:', capturedDocumentData.fileName);
+        } else {
+          console.log('❌ No document data captured in this stream');
         }
 
         // Add assistant response to history
@@ -852,20 +943,22 @@ Available tools:
 CRITICAL INSTRUCTIONS:
 1. ALWAYS pass user_id: "${userId}" when calling audit tools
 2. ONLY use real data from actual tool results. DO NOT use mock or sample data.
-3. Provide CONCISE responses with downloadable file links - do NOT include long document content.
-4. When tools return document results, present them as clean summaries with download links.
+3. Provide CONCISE responses with report summaries - do NOT stream long document content.
+4. When document generation tools return HTML content, present them as clean summaries with key findings.
 5. The audit tools will automatically use the user's stored credentials based on the user_id.
+6. Document generation tools return HTML content in the response buffer - present key metrics and findings instead of raw HTML.
 
 RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Brief summary of what was generated
 - Key findings/metrics (e.g., "Found X non-compliant controls")
-- Clear download link with file name and size
+- Report metadata (file name, size, organization details)
 - Next steps or recommendations
+- DO NOT include the full HTML content in the response
 
 WORKFLOW FOR COMPLIANCE REPORTS:
 1. When user asks for SOC 2 or compliance reports, FIRST run the appropriate security audit tool (aws_security_audit, azure_security_audit, or gcp_security_audit) to get real audit data
 2. Then use the real audit findings to generate SOC 2 or ISO reports with actual compliance status
-3. Present results as clean summaries with download links, NOT full document content
+3. Present results as clean summaries with key findings, NOT full document content
 
 EXAMPLE GOOD RESPONSE:
 "✅ SOC 2 Report Generated Successfully
@@ -881,9 +974,9 @@ EXAMPLE GOOD RESPONSE:
 - RDS instances publicly accessible (High Risk)
 - S3 buckets with public access (High Risk)
 
-**📁 Download Report:**
+**� Report Details:**
 File: SOC2_Report_Company_2024-09-08.html (45 KB)
-[Download Link]
+Content: Complete HTML report with detailed findings and evidence
 
 **Next Steps:** Priority remediation of critical logging and access controls required for compliance."
 
@@ -1025,14 +1118,27 @@ export async function PUT(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const history = geminiService.getHistory();
-    return NextResponse.json({
-      history,
-      length: history.length,
-      message: "Conversation history retrieved successfully",
-    });
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
+    
+    if (action === 'document') {
+      // Return the last generated document data
+      const documentData = geminiService.getLastDocumentData();
+      return NextResponse.json({ documentData });
+    }
+    
+    if (action === 'history') {
+      const history = geminiService.getHistory();
+      return NextResponse.json({
+        history,
+        length: history.length,
+        message: "Conversation history retrieved successfully",
+      });
+    }
+
+    return NextResponse.json({ error: "Invalid action parameter" }, { status: 400 });
   } catch (error) {
-    console.error("Error getting conversation history:", error);
+    console.error("Error in GET endpoint:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

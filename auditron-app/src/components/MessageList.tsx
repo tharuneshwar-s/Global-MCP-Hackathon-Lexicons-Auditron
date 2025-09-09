@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Message } from '../types';
+import { DocumentDownloader } from './DocumentDownloader';
 import './MessageList.css';
 
 interface MessageListProps {
@@ -7,6 +8,12 @@ interface MessageListProps {
     isLoading: boolean;
     currentStatus?: string;
     streamingMessage?: string;
+    documentData?: {
+        content: string;
+        fileName: string;
+        fileSize: string;
+        documentType: string;
+    } | null;
 }
 
 const markdownToHtml = (text: string) => {
@@ -36,9 +43,49 @@ const markdownToHtml = (text: string) => {
         .replace("*", "•");
 };
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, currentStatus, streamingMessage }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, currentStatus, streamingMessage, documentData }) => {
+    // Debug logging
+    React.useEffect(() => {
+        if (documentData) {
+            console.log('📄 MessageList received document data:', documentData);
+        }
+    }, [documentData]);
+
+    // Test button for development
+    const handleTestDocument = () => {
+        const testData = {
+            content: `
+            <!DOCTYPE html>
+            <html>
+            <head><title>Test SOC 2 Report</title></head>
+            <body>
+            <h1>Test SOC 2 Report</h1>
+            <p>This is a test document.</p>
+            </body>
+            </html>
+            `,
+            fileName: 'Test_SOC2_Report.html',
+            fileSize: '1 KB',
+            documentType: 'SOC'
+        };
+        console.log('🧪 Testing document downloader with:', testData);
+    };
+
     return (
         <div className="messages sizer h-[75vh]">
+            {/* Debug info in development */}
+            {process.env.NODE_ENV === 'development' && (
+                <div className="debug-panel">
+                    <p><strong>Debug Info:</strong></p>
+                    <p>Document Data: {documentData ? '✅ Available' : '❌ None'}</p>
+                    <p>Messages: {messages.length}</p>
+                    {documentData && <p>File: {documentData.fileName}</p>}
+                    <button onClick={handleTestDocument} className="debug-button">
+                        Test Document UI
+                    </button>
+                </div>
+            )}
+
             {messages.map((msg, i) => (
                 <div key={i} className={`message ${msg.role}`}>
                     <div className="message-avatar">
@@ -48,6 +95,10 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, c
                         <div className="message-text">
                             <div dangerouslySetInnerHTML={{ __html: markdownToHtml(msg.content) }} />
                         </div>
+                        {/* Show document downloader if this is the last assistant message and we have document data */}
+                        {msg.role === 'assistant' && i === messages.length - 1 && documentData && (
+                            <DocumentDownloader documentData={documentData} />
+                        )}
                     </div>
                 </div>
             ))}

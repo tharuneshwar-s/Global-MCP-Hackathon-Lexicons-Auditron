@@ -48,10 +48,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           title="Send message"
           aria-label="Send message"
         >
-          {isLoading ? (
-            <svg className="spinner" width="10" height="10" viewBox="0 0 24 24" fill="none">
+          {!isLoading ? (
+            <svg className="spinner mt-8" width="10" height="10" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeDasharray="32" strokeDashoffset="32">
-            <animate attributeName="stroke-dashoffset" dur="1s" values="32;0" repeatCount="indefinite"/>
+                <animate attributeName="stroke-dashoffset" dur="1s" values="32;0" repeatCount="indefinite" />
               </circle>
             </svg>
           ) : (

@@ -25,6 +25,12 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [documentData, setDocumentData] = useState<{
+    content: string;
+    fileName: string;
+    fileSize: string;
+    documentType: string;
+  } | null>(null);
   
   // Refs to track state and prevent multiple requests
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -133,6 +139,7 @@ export const useChat = () => {
     setError(null);
     setCurrentStatus('');
     setStreamingMessage('');
+    setDocumentData(null); // Clear previous document data
 
     try {
       let accumulatedContent = '';
@@ -152,6 +159,39 @@ export const useChat = () => {
             const finalMessage: Message = { role: 'assistant', content: accumulatedContent };
             setMessages(prev => [...prev, finalMessage]);
             setStreamingMessage('');
+            
+            // Check if the response contains document generation indicators and fetch document data
+            if (accumulatedContent.includes('Report Generated Successfully') ||
+                accumulatedContent.includes('compliance document generated') ||
+                accumulatedContent.includes('SOC2_Report_') ||
+                accumulatedContent.includes('ISO_') ||
+                accumulatedContent.includes('Comprehensive_Compliance_Report_') ||
+                accumulatedContent.includes('📄 Report Details:')) {
+              
+              console.log('🔍 Document generation detected, fetching document data...');
+              
+              try {
+                // Add a small delay to ensure backend has processed the document
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Fetch document data from the API
+                const docResponse = await fetch('/api/chat?action=document');
+                if (docResponse.ok) {
+                  const docResult = await docResponse.json();
+                  console.log('📄 Document fetch result:', docResult);
+                  if (docResult.documentData) {
+                    setDocumentData(docResult.documentData);
+                    console.log('✅ Document data set:', docResult.documentData.fileName);
+                  } else {
+                    console.log('❌ No document data in response');
+                  }
+                } else {
+                  console.error('❌ Failed to fetch document data:', docResponse.status);
+                }
+              } catch (error) {
+                console.error('❌ Failed to fetch document data:', error);
+              }
+            }
             break;
           case 'error':
             setError(chunk.content);
@@ -188,6 +228,7 @@ export const useChat = () => {
       }
     ]);
     setError(null);
+    setDocumentData(null); // Clear document data on reset
     geminiService.resetChat();
   }, []);
 
@@ -198,6 +239,7 @@ export const useChat = () => {
     streamingMessage,
     error,
     sendMessage,
-    resetChat
+    resetChat,
+    documentData
   };
 };
