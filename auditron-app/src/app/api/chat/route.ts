@@ -82,80 +82,25 @@ const saveReportFile = (content: string, filename: string): string => {
   return `/reports/${filename}`;
 };
 
-// Custom audit tool that uses user_id instead of credentials
-const createAuditTool = (provider: string) => {
-  return tool(
-    async ({ controls }: { controls: string[] }) => {
-      try {
-        // Get authenticated user
-        const supabase = await createClient();
+// Helper function to get current user ID for inclusion in prompts
+const getCurrentUserId = async (): Promise<string | null> => {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError || !user) {
-          return `⚠️ User not authenticated. Please log in to run audits.`;
-        }
-
-        // Check if user has credentials (optional check for user feedback)
-        const credentialsCheck = await checkUserCredentials();
-        if (!credentialsCheck.hasCredentials) {
-          return `⚠️ No credentials found for ${provider.toUpperCase()}. Please configure your ${provider.toUpperCase()} credentials in the settings before running audits.`;
-        }
-
-        // Prepare the audit request with user_id only
-        const auditRequest = {
-          controls: controls,
-          user_id: user.id,
-        };
-
-        // Make direct HTTP call to FastAPI backend
-        const response = await fetch(`${MCP_URL}/audit/${provider}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(auditRequest),
-        });
-
-        console.log(
-          `🔄 Sending audit request to ${provider.toUpperCase()} endpoint`,
-          auditRequest
-        );
-        console.log("Response: ", response);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const auditResults = await response.json();
-        return JSON.stringify(auditResults, null, 2);
-      } catch (error) {
-        console.error(`Error in ${provider} audit:`, error);
-        return `❌ Error running ${provider.toUpperCase()} audit: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`;
-      }
-    },
-    {
-      name: `${provider}_security_audit`,
-      description: `Run security audit controls for ${provider.toUpperCase()} using user's configured credentials. Returns detailed compliance findings.`,
-      schema: z.object({
-        controls: z
-          .array(z.string())
-          .describe(
-            `List of ${provider.toUpperCase()} control IDs to audit (e.g., ["${provider.toUpperCase()}-S3-PUBLIC-ACCESS-V1"])`
-          ),
-      }),
+    if (authError || !user) {
+      return null;
     }
-  );
-};
 
-// Create audit tools for each provider
-const awsAuditTool = createAuditTool("aws");
-const azureAuditTool = createAuditTool("azure");
-const gcpAuditTool = createAuditTool("gcp");
+    return user.id;
+  } catch (error) {
+    console.error("Error getting user ID:", error);
+    return null;
+  }
+};
 
 // PDF Generation Functions
 function generateSOCReportHTML(params: any): string {
@@ -621,7 +566,7 @@ class GeminiService {
   constructor() {
     this.langchainModel = new ChatGoogleGenerativeAI({
       model: "gemini-2.5-flash",
-      temperature: 0.05,
+      temperature: 0.01,
       apiKey: API_KEY,
       streaming: true, // Enable streaming for the model
     });
@@ -675,7 +620,7 @@ class GeminiService {
 
   async initializeAgent() {
     try {
-      // Get tools from the MCP server (for non-audit tools)
+      // Get tools from the MCP server (including audit tools)
       const mcpTools = await this.mcpClient.getTools();
 
       // Add our custom document generation tools
@@ -685,19 +630,8 @@ class GeminiService {
         generateComplianceReportTool,
       ];
 
-      // Add our custom audit tools with credential support
-      const auditTools = [awsAuditTool, azureAuditTool, gcpAuditTool];
-
-      // Combine all tools (prefer our custom audit tools over MCP ones)
-      const filteredMcpTools = mcpTools.filter(
-        (tool: any) =>
-          !tool.name.includes("audit") &&
-          !tool.name.includes("aws") &&
-          !tool.name.includes("azure") &&
-          !tool.name.includes("gcp")
-      );
-
-      const allTools = [...filteredMcpTools, ...customTools, ...auditTools];
+      // Use all MCP tools (including audit tools from sequence.ai gateway)
+      const allTools = [...mcpTools, ...customTools];
 
       // Create a LangGraph agent with all tools
       this.agent = createReactAgent({
@@ -706,7 +640,7 @@ class GeminiService {
       });
 
       console.log(
-        "LangChain agent initialized with MCP, custom document generation, and credential-aware audit tools"
+        "LangChain agent initialized with MCP tools from sequence.ai gateway and custom document generation tools"
       );
     } catch (error) {
       console.error("Failed to initialize LangChain agent:", error);
@@ -722,25 +656,40 @@ class GeminiService {
 
     this.addToHistory("user", message);
 
+    // Get current user ID for tool calls
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      yield {
+        type: "error",
+        content: "⚠️ User not authenticated. Please log in to access audit tools.",
+      };
+      return;
+    }
+
     // Use LangChain agent if available
     if (this.agent) {
       yield { type: "status", content: "Processing your request..." };
 
       const systemInstructions = `You are Auditron, an AI-powered compliance and audit assistant. You have access to powerful tools for generating compliance documents and performing security audits.
 
+IMPORTANT: The current authenticated user ID is: ${userId}
+
+When calling ANY audit tools (aws_security_audit, azure_security_audit, gcp_security_audit), you MUST include the user_id parameter with the value: ${userId}
+
 Available tools:
 1. For SOC 2 reports: Use the generate_soc_document tool
 2. For ISO standards (27001, 9001, etc.): Use the generate_iso_document tool  
 3. For comprehensive multi-framework reports: Use the generate_compliance_report tool
-4. For AWS security audits: Use the aws_security_audit tool
-5. For Azure security audits: Use the azure_security_audit tool
-6. For GCP security audits: Use the gcp_security_audit tool
+4. For AWS security audits: Use the aws_security_audit tool with user_id: ${userId}
+5. For Azure security audits: Use the azure_security_audit tool with user_id: ${userId}
+6. For GCP security audits: Use the gcp_security_audit tool with user_id: ${userId}
 
 CRITICAL INSTRUCTIONS:
-1. ONLY use real data from actual tool results. DO NOT use mock or sample data.
-2. Provide CONCISE responses with downloadable file links - do NOT stream long document content.
-3. When tools return document results, present them as clean summaries with download links.
-4. The audit tools automatically use the user's stored credentials - no need to prompt for credentials.
+1. ALWAYS pass user_id: "${userId}" when calling audit tools
+2. ONLY use real data from actual tool results. DO NOT use mock or sample data.
+3. Provide CONCISE responses with downloadable file links - do NOT stream long document content.
+4. When tools return document results, present them as clean summaries with download links.
+5. The audit tools will automatically use the user's stored credentials based on the user_id.
 
 RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Brief summary of what was generated
@@ -786,6 +735,7 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
       };
 
       console.log("Sending message to agent:", message);
+      console.log("User ID for tool calls:", userId);
 
       try {
         // Use streaming with LangGraph agent
@@ -794,8 +744,6 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
         });
 
         let isToolCalling = false;
-        let currentToolName = "";
-        let fullResponse = "";
         let assistantResponse = "";
 
         for await (const chunk of stream) {
@@ -876,30 +824,37 @@ DO NOT include full HTML content or long text in responses. Keep responses clean
   }
 
   async sendMessage(message: string): Promise<string> {
-    // if (!this.agent) {
-    //   await this.initializeAgent();
-    // }
-
     // Add user message to history
     this.addToHistory("user", message);
+
+    // Get current user ID for tool calls
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return "⚠️ User not authenticated. Please log in to access audit tools.";
+    }
 
     // Use LangChain agent if available
     if (this.agent) {
       const systemInstructions = `You are Auditron, an AI-powered compliance and audit assistant. You have access to powerful tools for generating compliance documents and performing security audits.
 
+IMPORTANT: The current authenticated user ID is: ${userId}
+
+When calling ANY audit tools (aws_security_audit, azure_security_audit, gcp_security_audit), you MUST include the user_id parameter with the value: ${userId}
+
 Available tools:
 1. For SOC 2 reports: Use the generate_soc_document tool
 2. For ISO standards (27001, 9001, etc.): Use the generate_iso_document tool  
 3. For comprehensive multi-framework reports: Use the generate_compliance_report tool
-4. For AWS security audits: Use the aws_security_audit tool
-5. For Azure security audits: Use the azure_security_audit tool
-6. For GCP security audits: Use the gcp_security_audit tool
+4. For AWS security audits: Use the aws_security_audit tool with user_id: ${userId}
+5. For Azure security audits: Use the azure_security_audit tool with user_id: ${userId}
+6. For GCP security audits: Use the gcp_security_audit tool with user_id: ${userId}
 
 CRITICAL INSTRUCTIONS:
-1. ONLY use real data from actual tool results. DO NOT use mock or sample data.
-2. Provide CONCISE responses with downloadable file links - do NOT include long document content.
-3. When tools return document results, present them as clean summaries with download links.
-4. The audit tools automatically use the user's stored credentials - no need to prompt for credentials.
+1. ALWAYS pass user_id: "${userId}" when calling audit tools
+2. ONLY use real data from actual tool results. DO NOT use mock or sample data.
+3. Provide CONCISE responses with downloadable file links - do NOT include long document content.
+4. When tools return document results, present them as clean summaries with download links.
+5. The audit tools will automatically use the user's stored credentials based on the user_id.
 
 RESPONSE FORMAT FOR DOCUMENT GENERATION:
 - Brief summary of what was generated
