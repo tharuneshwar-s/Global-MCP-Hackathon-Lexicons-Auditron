@@ -21,7 +21,7 @@ def get_user_credentials(user_id: str) -> Dict[str, Any]:
     """
     try:
         supabase = get_supabase_client()
-        
+                
         # Query credentials table for the user
         response = supabase.table('credentials').select('*').eq('user_id', user_id).execute()
         
@@ -31,7 +31,7 @@ def get_user_credentials(user_id: str) -> Dict[str, Any]:
                 'azure_credentials': None,
                 'gcp_credentials': None
             }
-        
+                    
         # Get the first (and should be only) credential record
         cred_data = response.data[0]
         
