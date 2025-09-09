@@ -158,19 +158,7 @@ Auditron transforms security auditing with cutting-edge technology:
 
 ### System Architecture
 
-```mermaid
-graph TB
-    A[Next.js Frontend<br/>React + TypeScript] --> B[Supabase Auth<br/>User Management]
-    A --> C[Next.js API Routes<br/>Backend Integration]
-    C --> D[Google Gemini 2.5 Flash<br/>AI + LangChain]
-    D --> E[MCP Gateway<br/>sequence.ai]
-    E --> F[Auditron FastAPI<br/>MCP Server]
-    F --> G[Supabase Database<br/>Credential Storage]
-    F --> H[Cloud Provider APIs<br/>AWS + Azure + GCP]
-    H --> I[Security Findings<br/>Evidence Collection]
-    I --> J[Document Generation<br/>SOC 2 + ISO Reports]
-    J --> K[Buffer Response<br/>Instant Download]
-```
+[![](https://mermaid.ink/img/pako:eNpVk2Fv2jAQhv-K5a-jLEsaEqKpUkiAphsrIp0mLfDBTQ7wGuzMsdtSxH_fYUK35Ut80vvce3c-H2gpK6AR3SjWbMnDaCkIfnHxDV51_1dLJkoKDaL6_Kg-3iyAlZp8IA_7BvJS8UavyNXVDRkVuWnYI2uBxEZvrfZ7C4rMmGAb2IHQqy6x1Sfv6eN5RhbSaGgtNGLlE5qRDD2xIs2l6MDEgmkxlXJTA5nCjgtO3L5PJjVrz5ZxhrV9ZWKTbBm_gKkFx8UsmZMp0_DC9lbcwm8DooQ-451ybJWTIjYV19g2mbBWY4FWfsJzUM-gOvXEqqd_O0-ZtgcrTxRU2DVnNcm1VDiE_7DbIqmlqchcyWde4aDQ5jyB-EeOTcRvRgH-p8m8424tlxU5lEZxvScTLiouNmdqfMqCzZBE1jWU_8wts9xdkcrSnO4BJyfgPFlL5vcJcdEpy-_JAhqpdNuRd5b8UozMeo0VLqBtpOjay0SrGSZL5YuoJatWtIcbxCsaaWWgR3egduwU0sMp2ZLqLW7BkkZ4rJh6WtKlOCLTMPFTyt0FU9JstjRas7rFyDQV3lfKGW7Cu4QZLfO9KC8xZqDRgb7SyB0G_euBMwg8zw0GXuD7PbqnkRf2A8dzQz8IA8cZ-uGxR9-sp9MPP3muF1yHjj8Ih0MHAcCrl2p2fhP2aWBVuJGgEmmEppHvHf8AfQoBwQ?type=png)](https://mermaid.live/edit#pako:eNpVk2Fv2jAQhv-K5a-jLEsaEqKpUkiAphsrIp0mLfDBTQ7wGuzMsdtSxH_fYUK35Ut80vvce3c-H2gpK6AR3SjWbMnDaCkIfnHxDV51_1dLJkoKDaL6_Kg-3iyAlZp8IA_7BvJS8UavyNXVDRkVuWnYI2uBxEZvrfZ7C4rMmGAb2IHQqy6x1Sfv6eN5RhbSaGgtNGLlE5qRDD2xIs2l6MDEgmkxlXJTA5nCjgtO3L5PJjVrz5ZxhrV9ZWKTbBm_gKkFx8UsmZMp0_DC9lbcwm8DooQ-451ybJWTIjYV19g2mbBWY4FWfsJzUM-gOvXEqqd_O0-ZtgcrTxRU2DVnNcm1VDiE_7DbIqmlqchcyWde4aDQ5jyB-EeOTcRvRgH-p8m8424tlxU5lEZxvScTLiouNmdqfMqCzZBE1jWU_8wts9xdkcrSnO4BJyfgPFlL5vcJcdEpy-_JAhqpdNuRd5b8UozMeo0VLqBtpOjay0SrGSZL5YuoJatWtIcbxCsaaWWgR3egduwU0sMp2ZLqLW7BkkZ4rJh6WtKlOCLTMPFTyt0FU9JstjRas7rFyDQV3lfKGW7Cu4QZLfO9KC8xZqDRgb7SyB0G_euBMwg8zw0GXuD7PbqnkRf2A8dzQz8IA8cZ-uGxR9-sp9MPP3muF1yHjj8Ih0MHAcCrl2p2fhP2aWBVuJGgEmmEppHvHf8AfQoBwQ)
 
 ### Component Architecture
 
@@ -396,141 +384,11 @@ README.md                           # This comprehensive guide
 
 ---
 
-## 🧪 Testing & Validation
-
-### Functional Testing
-
-**Document Download Feature Testing:**
-```bash
-# Test document generation and download
-1. Start both backend and frontend
-2. Login to the application
-3. Request: "Generate an SOC 2 Type II report"
-4. Verify: Document appears with download button
-5. Test: Click download and verify HTML file
-6. Test: Click preview and verify content display
-✅ Status: Fully functional and tested
-```
-
-**MCP Integration Testing:**
-```bash
-# Test MCP tool connectivity
-cd auditron
-python test.py  # Verifies MCP client connection
-✅ Status: Stable with retry logic implemented
-```
-
-**Multi-Cloud Audit Testing:**
-```bash
-# Test security control execution
-1. Configure cloud credentials in app
-2. Request comprehensive audit
-3. Verify findings for each cloud provider
-4. Check evidence quality and recommendations
-✅ Status: 24+ controls working reliably
-```
-
----
-
-## 🔒 Security & Compliance
-
-### Data Security
-- **Encryption at Rest**: All user credentials encrypted in Supabase
-- **Row-Level Security**: Database-level user isolation
-- **API Security**: JWT token validation and rate limiting
-- **Input Validation**: Comprehensive request validation with Pydantic
-- **Audit Logging**: Complete audit trail of all operations
-
-### Compliance Features
-- **SOC 2 Type II**: Automated report generation with control testing
-- **ISO 27001**: Information security management documentation
-- **GDPR Compliance**: Privacy-by-design with minimal data collection
-- **Industry Standards**: Adherence to security frameworks and best practices
-
-### Network Security
-- **HTTPS Everywhere**: End-to-end encryption for all communications
-- **CORS Configuration**: Secure cross-origin resource sharing
-- **Rate Limiting**: Protection against abuse and DoS attacks
-- **Input Sanitization**: XSS and injection attack prevention
-
----
-
-## 🤝 Contributing
-
-### Development Process
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Follow code style guidelines and add tests
-4. Submit pull request with detailed description
-
-### Adding New Security Controls
-1. Define control in `auditron/controls.py`
-2. Implement logic in appropriate service file
-3. Add MCP tool registration in `main.py`
-4. Write comprehensive tests
-5. Update documentation
-
-### Code Standards
-- **Python**: Follow PEP 8 with Black formatting
-- **TypeScript**: Strict mode with ESLint and Prettier
-- **Testing**: Comprehensive test coverage for new features
-- **Documentation**: Update README files for significant changes
-
----
-
-## 📞 Support & Community
-
-### Getting Help
-- **Documentation**: Comprehensive guides in each component's README
-- **Issues**: GitHub Issues for bug reports and feature requests
-- **Community**: Join our Discord for real-time support
-- **Enterprise**: Contact team for enterprise support and custom deployments
-
-### Roadmap
-- **Expanded Controls**: Additional security controls for all cloud providers
-- **New Frameworks**: PCI DSS, HIPAA, and other compliance standards
-- **Advanced Analytics**: Trend analysis and risk scoring
-- **Integration APIs**: Webhook and API integrations for external tools
-- **Mobile App**: Native mobile application for on-the-go auditing
-
----
-
-**🎯 Ready to revolutionize your security auditing?**
-
-Auditron combines cutting-edge AI with enterprise-grade security tools to deliver the future of compliance automation. Start your journey to intelligent security auditing today!
-
-**⭐ Star this repo** if you find Auditron useful for your security and compliance needs!
-
-- **Responsive Design**: Seamless experience across desktop, tablet, and mobile devices
-- **Real-Time Streaming**: Live response generation with typing indicators and progress updates
-- **Professional UI**: Clean, intuitive interface designed for security professionals
-- **Authentication Flow**: Smooth login/logout with session management
-- **Dashboard Analytics**: Visual insights into security posture and compliance trends
-
 ## 🏗️ Technical Architecture
 
 ### System Overview
 
-```mermaid
-graph TB
-    A[User Interface - Next.js] --> B[Chat API - LangChain]
-    B --> C[Google Gemini 2.5 Flash]
-    C --> D[MCP Client]
-    D --> E[Sequence.ai Gateway]
-    E --> F[Auditron MCP Server - FastAPI]
-    F --> G[Multi-Cloud Audit Engine]
-    F --> H[Supabase Database]
-    G --> I[AWS SDK]
-    G --> J[Azure SDK] 
-    G --> K[GCP SDK]
-    H --> L[User Credentials]
-    H --> M[Audit Results]
-    
-    style A fill:#61DAFB
-    style C fill:#4285F4
-    style F fill:#009639
-    style H fill:#3ECF8E
-```
+[![](https://mermaid.ink/img/pako:eNpVkt2O2jAQhV_Fcm8hAvKfi5VCQgLdpVo1XVWq2QuXDOA2saljt8si3r3GhBXkIvLMd44zM5kjXosacIK3ku536Nt0xZF5UvLSgUQLrkBu6BrQEH2BN-X86l7RcPiApiTbUYXS54UhT5RvTcj468U8tZKMlEJsG0AltIwzNHF8VDS02_WqzKpyssyeUdYw4KoHuQUzUsEfDXwNDmWopAr-0UOvmFlFQVJdMyUFR-c7KpB_TclDVNBOmcJ6bWG1JVnqRrFh1ghdI-tDM75lHO5kc1LpPf1JO0A5VfbQ89LyBUm_V6jKH--yn0n6riXYPLoFj6Q8F_Yhn9vs02W2mYTaNM1o093h5aUt9BU6U_KVXd6dOpiBpmjDmib5FIzztJjekqwn3iTyC--WFD0ZjeLAjW_JvCfuLCuiGR6YTWA1TpTUMMAtyJaeQ3w8e1ZY7aCFFU7Msaby9wqv-Ml49pT_EKK92qTQ2x1ONqY3E-l9bX5fzqjZsfYjS7US1YGvrx5zBU6O-A0nkzh0PNeL4zDyg9j3ogE-4MSNnMCPgkkQxn44Hrtj7zTA7_ajIycau24UhIE3iUduFBkHmBkKubwst91xUxbwGmQmNFc4CYPTf4qG4V0?type=png)](https://mermaid.live/edit#pako:eNpVkt2O2jAQhV_Fcm8hAvKfi5VCQgLdpVo1XVWq2QuXDOA2saljt8si3r3GhBXkIvLMd44zM5kjXosacIK3ku536Nt0xZF5UvLSgUQLrkBu6BrQEH2BN-X86l7RcPiApiTbUYXS54UhT5RvTcj468U8tZKMlEJsG0AltIwzNHF8VDS02_WqzKpyssyeUdYw4KoHuQUzUsEfDXwNDmWopAr-0UOvmFlFQVJdMyUFR-c7KpB_TclDVNBOmcJ6bWG1JVnqRrFh1ghdI-tDM75lHO5kc1LpPf1JO0A5VfbQ89LyBUm_V6jKH--yn0n6riXYPLoFj6Q8F_Yhn9vs02W2mYTaNM1o093h5aUt9BU6U_KVXd6dOpiBpmjDmib5FIzztJjekqwn3iTyC--WFD0ZjeLAjW_JvCfuLCuiGR6YTWA1TpTUMMAtyJaeQ3w8e1ZY7aCFFU7Msaby9wqv-Ml49pT_EKK92qTQ2x1ONqY3E-l9bX5fzqjZsfYjS7US1YGvrx5zBU6O-A0nkzh0PNeL4zDyg9j3ogE-4MSNnMCPgkkQxn44Hrtj7zTA7_ajIycau24UhIE3iUduFBkHmBkKubwst91xUxbwGmQmNFc4CYPTf4qG4V0)
 
 ### Component Architecture
 
@@ -681,8 +539,6 @@ SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 AWS_DEFAULT_REGION=us-east-1
-AZURE_SUBSCRIPTION_ID=your_azure_subscription
-GOOGLE_CLOUD_PROJECT=your_gcp_project
 ```
 
 **Frontend (.env.local):**
@@ -942,7 +798,4 @@ CREATE POLICY "Users can manage their own credentials" ON credentials
 - Automated security testing in deployment pipelines
 - Reduced security technical debt accumulation
 - Proactive compliance maintenance
-
-### Compliance & Risk Management
-
 

@@ -40,24 +40,7 @@ Auditron Backend is the core security audit engine that powers the Auditron plat
 
 ### MCP Server Architecture
 
-```mermaid
-graph TB
-    A[AI Agent - Google Gemini] --> B[LangChain Framework]
-    B --> C[MCP Client]
-    C --> D[sequence.ai Gateway]
-    D --> E[Auditron FastAPI MCP Server]
-    E --> F[User Context Service]
-    F --> G[Supabase Database]
-    E --> H[Multi-Cloud Audit Engine]
-    H --> I[AWS SDK]
-    H --> J[Azure SDK]
-    H --> K[GCP SDK]
-    G --> L[User Credentials]
-    
-    style A fill:#4285F4
-    style E fill:#009639
-    style G fill:#3ECF8E
-```
+[![](https://mermaid.ink/img/pako:eNplUt1u2jAUfhXLuwUUcBKSXFQKIUlZi1QpmybV9MIjp8FqYjPHXksR7z5jQtVqvrDs789HPueIt7IGnOBGsf0O_VhsBLIrpekKpQ0IjcaolLJpAZXQccGf0Hh8gxb0nokm2zEuUKFYB69SvTxdvAunyOg6e0BZy23GQGSOWNIe_hgQW5gwjkqm4ZUdBsXSKXKampprJW0263X6sELnrArUX1CDMnfKgv7sQaFMCg1v2in4FgZJ4SQlrcye_WY9oCXT7vAl4pauTav5OGulqZF7GOWi4eIqu3WyFU1_Vaha3n1Bv9P03Sj4D7-j5bngD7R06P1QrYLafgpnbT_Ql73XB_vLKXrmbZt882dRUPifmXxgPC8OSfyZKQeG5FkR5Xhkm8lrnGhlYIQ7UB07X_Hx7NlgvYMONjixx5qplw3eiJP17Jl4lLK72pQ0zQ4nz7ZKezP72jZqyZkdk-4DZUbL6iC2V4-NwMkRv-FkFs8nPvHjeB4FYRz40QgfcEKiSRhE4Sycx8F8OiVT_zTC7-5RbxJNCYnCOYmI55EZCUcYbC-kWl_m042pLQtEDSqTRmicRN7pH31S0WA?type=png)](https://mermaid.live/edit#pako:eNplUt1u2jAUfhXLuwUUcBKSXFQKIUlZi1QpmybV9MIjp8FqYjPHXksR7z5jQtVqvrDs789HPueIt7IGnOBGsf0O_VhsBLIrpekKpQ0IjcaolLJpAZXQccGf0Hh8gxb0nokm2zEuUKFYB69SvTxdvAunyOg6e0BZy23GQGSOWNIe_hgQW5gwjkqm4ZUdBsXSKXKampprJW0263X6sELnrArUX1CDMnfKgv7sQaFMCg1v2in4FgZJ4SQlrcye_WY9oCXT7vAl4pauTav5OGulqZF7GOWi4eIqu3WyFU1_Vaha3n1Bv9P03Sj4D7-j5bngD7R06P1QrYLafgpnbT_Ql73XB_vLKXrmbZt882dRUPifmXxgPC8OSfyZKQeG5FkR5Xhkm8lrnGhlYIQ7UB07X_Hx7NlgvYMONjixx5qplw3eiJP17Jl4lLK72pQ0zQ4nz7ZKezP72jZqyZkdk-4DZUbL6iC2V4-NwMkRv-FkFs8nPvHjeB4FYRz40QgfcEKiSRhE4Sycx8F8OiVT_zTC7-5RbxJNCYnCOYmI55EZCUcYbC-kWl_m042pLQtEDSqTRmicRN7pH31S0WA)
 
 ### Component Structure
 
@@ -319,10 +302,6 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Cloud Provider Settings
-AWS_DEFAULT_REGION=us-east-1
-AZURE_SUBSCRIPTION_ID=your_azure_subscription
-GOOGLE_CLOUD_PROJECT=your_gcp_project
 ```
 
 **Development vs Production:**
@@ -357,25 +336,6 @@ ALTER TABLE credentials ENABLE ROW LEVEL SECURITY;
 -- User isolation policy
 CREATE POLICY "Users can manage their own credentials" ON credentials
   FOR ALL USING (auth.uid() = user_id);
-```
-
-## 🧪 Testing & Development
-
-### Running Tests
-
-**Unit Tests:**
-```bash
-python -m pytest tests/ -v
-```
-
-**MCP Client Testing:**
-```bash
-python test.py
-```
-
-**Security Control Testing:**
-```bash
-python -m pytest tests/test_security_controls.py -v
 ```
 
 ### Development Workflow
@@ -422,40 +382,6 @@ python -m pytest tests/test_security_controls.py -v
 - **Regional Scope**: Audits limited to specified regions for cost control
 - **Timeout Handling**: Automatic timeout for long-running operations
 
-## 📊 Monitoring & Observability
-
-### Logging
-- **Structured Logging**: JSON-formatted logs with correlation IDs
-- **Audit Trails**: Comprehensive logging of all security operations
-- **Performance Metrics**: Execution time tracking for all controls
-- **Error Tracking**: Detailed error logging with stack traces
-
-### Health Monitoring
-- **Health Endpoints**: `/health` for service status monitoring
-- **Dependency Checks**: Supabase and cloud provider connectivity
-- **Performance Metrics**: Response time and throughput monitoring
-- **Alert Integration**: Ready for Prometheus/Grafana integration
-
-### Production Monitoring
-```python
-# Example health check response
-{
-  "status": "healthy",
-  "timestamp": "2025-09-09T10:30:00Z",
-  "version": "1.0.0",
-  "dependencies": {
-    "supabase": "connected",
-    "aws": "accessible",
-    "azure": "accessible", 
-    "gcp": "accessible"
-  },
-  "metrics": {
-    "uptime": "7d 14h 32m",
-    "total_audits": 1247,
-    "avg_response_time": "12.3s"
-  }
-}
-```
 
 ### Azure Controls (8 checks)
 
@@ -490,46 +416,6 @@ python -m pytest tests/test_security_controls.py -v
 2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
-   ```
-
-3. **Configure cloud credentials**
-   
-   **AWS:**
-   ```bash
-   # Option 1: AWS CLI
-   aws configure
-   
-   # Option 2: Environment variables
-   export AWS_ACCESS_KEY_ID=your_access_key
-   export AWS_SECRET_ACCESS_KEY=your_secret_key
-   export AWS_DEFAULT_REGION=us-east-1
-   ```
-   
-   **Azure:**
-   ```bash
-   # Azure CLI login
-   az login
-   
-   # Or set environment variables
-   export AZURE_CLIENT_ID=your_client_id
-   export AZURE_CLIENT_SECRET=your_client_secret
-   export AZURE_TENANT_ID=your_tenant_id
-   export AZURE_SUBSCRIPTION_ID=your_subscription_id
-   ```
-   
-   **GCP:**
-   ```bash
-   # Service account key file
-   export GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
-   
-   # Or use gcloud CLI
-   gcloud auth application-default login
-   ```
-
-4. **Create environment file** (optional)
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
    ```
 
 ## Running the Server
@@ -613,28 +499,7 @@ curl -X POST "http://localhost:8000/audit/azure" \
 }
 ```
 
-## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `AWS_DEFAULT_REGION` | AWS region for auditing | `us-east-1` |
-| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | - |
-| `GOOGLE_CLOUD_PROJECT` | GCP project ID | - |
-| `PORT` | Server port | `8000` |
-| `HOST` | Server host | `0.0.0.0` |
-
-## Testing
-
-### Run Tests
-```bash
-python test.py
-```
-
-### Test MCP Integration
-```bash
-# The test.py script tests MCP client connectivity
-python test.py
-```
 
 ## Error Handling
 
